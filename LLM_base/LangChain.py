@@ -20,8 +20,14 @@ def invoke_and_chain(model, temperature, prompt_p, var_dict):
     chain = prompt | client
     return chain.invoke(var_dict)
 
+
 """
-# test1 基础
+test1 
+1.学会如何设置环境变量
+2.学会调用模型（设置参数)
+"""
+
+
 model = "qwen-turbo"
 temperature = 0.7
 prompt_p = '''
@@ -30,5 +36,5 @@ prompt_p = '''
 vardict = {"var1":5, "var2":7}
 response = invoke_and_chain(model=model, temperature=temperature, prompt_p=prompt_p, var_dict=vardict)
 print(response)
-"""
+
 
