@@ -41,16 +41,20 @@
 ---
 
 ### 3. 大模型基础
-
+* 教程：
+  * [大模型基础视频教程](https://www.bilibili.com/video/BV1Bo4y1A7FU/)
+  
 * 学习大模型的核心概念：
-
+  
   * 预训练（Pre-training）
   * Tokenizer 与词表
   * 模型规模与算力需求
   * 训练数据的构建
 
----
+* **成果：**
+  * [代码与文档](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LLM_base/)
 
+---
 ### 4. 大模型之训练
 
 * 重点理解：
