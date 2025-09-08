@@ -413,7 +413,3 @@ BaseMemory
 `Memory` 是上层接口，`ChatMessageHistory` 是底层存储，消息用 `AIMessage / HumanMessage` 表示。
 
 ---
-
-这样排版后，你的 README 会有清晰的 **目录索引**，每个章节都层次分明，读者可以快速定位。
-
-要不要我帮你把 **Prompt / Parser / Memory** 里的示例代码块都统一折叠成 `<details>` 展开效果（像官方文档那样）？这样大文件也更清爽。
