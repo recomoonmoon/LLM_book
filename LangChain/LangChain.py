@@ -7,7 +7,7 @@ from langchain_core.prompts import PromptTemplate
 from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
 from langchain_core.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
 from langchain_core.prompts import HumanMessagePromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser,PydanticOutputParser,ListOutputParser,RetryOutputParser,OutputFixingParser
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser,PydanticOutputParser,ListOutputParser,RetryOutputParser,OutputFixingParser,CommaSeparatedListOutputParser
 from langchain_community.llms import Tongyi
 from langchain.memory import ConversationBufferMemory
 from pydantic import BaseModel, Field
@@ -135,6 +135,7 @@ print("*"*100)
 """
 schema = ResponseSchema(name="disease", description="判断出的病人所患的疾病", dtype=str)
 print(schema)
+print("*"*100)
 
 """
 二、StructuredOutputParser（结构化解析器）和 三
@@ -150,6 +151,7 @@ res_schemas = [
     ResponseSchema(name="medicine", description="治疗该疾病所需的药品", type="string")
 ]
 sp = StructuredOutputParser.from_response_schemas(res_schemas)
+
 prompt = """我身体不舒服，有{symptom}症状，怎么办？请你根据症状判断疾病并给出治疗药品。请严格按照 JSON 格式输出：{standard}"""
 standard = sp.get_format_instructions()
 prompt_template = PromptTemplate(template=prompt, partial_variables={"standard": standard})
@@ -157,7 +159,7 @@ prompt = prompt_template.partial(format_instructions=sp.get_format_instructions(
 chain = prompt | llm | sp
 var_dict = {"symptom": "头晕，体温高，咳嗽，无力，流鼻涕"}
 #print(chain.invoke(var_dict))
-
+print("*"*100)
 """
 四、解析模型返回结果
 模型调用后，先得到原始字符串，再通过 output_parser.parse(...) 转换为结构化结果。
@@ -167,7 +169,7 @@ chain = prompt | llm
 output = chain.invoke(var_dict)
 print(output)
 print(sp.parse(output))
-
+print("*"*100)
 """
 五. PydanticOutputParser（带验证的 JSON 解析）
 定义一个 Pydantic 模型，包含字段和校验规则
@@ -181,8 +183,32 @@ class data_process(BaseModel):
     medicine: str = Field(description="治疗药物")
 
 pydantic_sp = PydanticOutputParser(pydantic_object=data_process)
-print(pydantic_sp.parse(output))
+#print(pydantic_sp.parse(output))
 
-"""六. ListOutputParser / CommaSeparatedListOutputParser（解析列表）
+"""六.CommaSeparatedListOutputParser（解析列表）
 ListOutputParser：解析 markdown 风格的列表
 CommaSeparatedListOutputParser：解析逗号分隔字符串"""
+
+test_text = "对乙酰氨基酚（退烧止痛）,氯苯那敏（抗过敏）,止咳糖浆,多喝水, 休息充足"
+csv_ps = CommaSeparatedListOutputParser()
+#print(csv_ps.parse(test_text))
+
+"""### 七. RetryOutputParser / OutputFixingParser（修复错误输出）
+有时模型返回的 JSON 不合法，会导致解析失败。
+* **RetryOutputParser**：自动重试一次，附带更严格的提示
+* **OutputFixingParser**：调用额外 LLM 来修复格式错误"""
+res_schemas = [
+    ResponseSchema(name="disease", description="判断出的病人所患的疾病", type="string"),
+    ResponseSchema(name="medicine", description="治疗该疾病所需的药品", type="string")
+]
+sp = StructuredOutputParser.from_response_schemas(res_schemas)
+bad_case = "{disease: 感冒, medicine: '板蓝根'}"
+fix_ps = OutputFixingParser.from_llm(parser=sp, llm=llm)
+#print(fix_ps.parse(bad_case))
+
+
+# blind中止
+chain = prompt | llm | llm.bind(stop=["\n"])
+print(chain.invoke({"disease": "糖尿病", "symptom": "尿血", "medicine": "格列美脲"}))
+print("*"*100)
+

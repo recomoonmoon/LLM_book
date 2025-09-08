@@ -454,6 +454,8 @@ print(parser.get_format_instructions())
 * **ListOutputParser**：解析 markdown 风格的列表
 * **CommaSeparatedListOutputParser**：解析逗号分隔字符串
 
+
+其中ListOutputParser由于LangChain更新，变成了一个抽象类，不能直接使用，普通的解析还是直接使用csv_parser比较好
 ```python
 from langchain.output_parsers import ListOutputParser, CommaSeparatedListOutputParser
 
