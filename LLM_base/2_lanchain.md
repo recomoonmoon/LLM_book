@@ -91,5 +91,7 @@ print(response)
 * 对于对话式场景，可改用 `ChatTongyi` + `SystemMessage/HumanMessage`。
 
 ---
+ ![img_1.png](img_1.png)
+如图所示，from_template默认采用humanmessage来创建消息
 
  
