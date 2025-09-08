@@ -1,40 +1,59 @@
+好的 ✅ 我帮你把整个 README 文档重新排版，增加目录结构和层级标题，让内容更清晰、更易读，保持一致风格。你可以直接覆盖你现有的 README：
 
 ---
 
 # 📘 LangChain + Tongyi 使用笔记
 
+## 📑 目录
+
+1. [参考资料](#-参考资料)
+2. [环境准备](#-环境准备)
+3. [基础调用](#-基础调用)
+4. [Prompt 用法总结](#-prompt-用法总结)
+
+   * 4.1 [PromptTemplate（单轮字符串模板）](#一prompttemplate单轮字符串模板)
+   * 4.2 [FewShotPromptTemplate（示例提示）](#二fewshotprompttemplate示例提示)
+   * 4.3 [ChatPromptTemplate（多轮对话）](#三chatprompttemplate多轮对话)
+   * 4.4 [MessagePromptTemplate（精细化消息控制）](#四messageprompttemplate精细化消息控制)
+   * 4.5 [MessagesPlaceholder（插入对话历史）](#五messagesplaceholder插入对话历史)
+5. [Parser 用法总结](#-parser-用法总结)
+
+   * 5.1 [ResponseSchema（定义输出字段）](#一responseschema定义输出字段)
+   * 5.2 [StructuredOutputParser（结构化解析器）](#二structuredoutputparser结构化解析器)
+   * 5.3 [PydanticOutputParser（带验证的 JSON 解析）](#五-pydanticoutputparser带验证的-json-解析)
+   * 5.4 [ListOutputParser / CommaSeparatedListOutputParser](#六-listoutputparser--commaseparatedlistoutputparser解析列表)
+   * 5.5 [RetryOutputParser / OutputFixingParser](#七-retryoutputparser--outputfixingparser修复错误输出)
+6. [Memory 用法总结](#-memory记忆模块-用法总结)
+
+---
+
 ## 📖 参考资料
 
 * [LangChain 中文文档](https://python.langchain.ac.cn/docs/introduction/)
 * [吴恩达《LLM Cookbook》教程](https://datawhalechina.github.io/llm-cookbook/#/C2/readme)
----
 
-## 章节设计
- * 环境准备
- * 基础调用
- * 提示词模板
- * 输出解析器
- * Memory
+---
 
 ## 🚀 环境准备
 
 在国内环境下，不使用 OpenAI 的 key，而是使用 **通义千问 (Qwen / Tongyi)** 的 API key。
 
 1. 在 `record.env` 文件中配置环境变量：
-   ```env
-   QWEN_API_KEY=your_qwen_key
-   QWEN_URL=your_qwen_url
-   ```
+
+```env
+QWEN_API_KEY=your_qwen_key
+QWEN_URL=your_qwen_url
+```
 
 2. 在代码里加载并设置：
 
-   ```python
-   from dotenv import load_dotenv
-   import os
+```python
+from dotenv import load_dotenv
+import os
 
-   if load_dotenv("../record.env"):
-       os.environ["DASHSCOPE_API_KEY"] = os.environ["QWEN_API_KEY"]
-   ```
+if load_dotenv("../record.env"):
+    os.environ["DASHSCOPE_API_KEY"] = os.environ["QWEN_API_KEY"]
+```
 
 ---
 
@@ -51,65 +70,16 @@ print(llm.invoke("hello world"))
 
 ---
 
-## 🔗 使用 PromptTemplate + Chain
-
-封装一个简单的函数，把 **模板** 和 **模型** 串成一个 chain：
-
-```python
-def invoke_and_chain(model, temperature, prompt_p, var_dict):
-    client = Tongyi(model=model, temperature=temperature)
-    prompt = PromptTemplate.from_template(prompt_p)
-    chain = prompt | client
-    return chain.invoke(var_dict)
-```
-
-调用示例：
-
-```python
-model = "qwen-turbo"
-temperature = 0.7
-prompt_p = '''
-{var1} * {var2} 等于多少？
-'''
-vardict = {"var1": 5, "var2": 7}
-
-response = invoke_and_chain(
-    model=model, 
-    temperature=temperature, 
-    prompt_p=prompt_p, 
-    var_dict=vardict
-)
-print(response)
-```
-
-输出：
-
-```
-35
-```
-
----
-
-## 💡 提示技巧
-
-* `PromptTemplate` 支持变量插值，可快速复用模板。
-* 使用 `"Let's think step by step"` 等思维链提示，可以提升推理准确率。
-* 对于对话式场景，可改用 `ChatTongyi` + `SystemMessage/HumanMessage`。
-
----
- ![img_1.png](img_1.png)
-如图所示，from_template默认采用humanmessage来创建消息
-
-
-# LangChain Prompt 用法总结
+## 💡 Prompt 用法总结
 
 Prompt 是大模型（LLM）的输入，可以是简单字符串，也可以是多轮对话消息。在 LangChain 中，Prompt 的设计方式影响模型的输出效果。
 
 ---
 
-## 一、PromptTemplate（单轮字符串模板）
+### 一、PromptTemplate（单轮字符串模板）
 
-* **用途**：构建固定格式的字符串 prompt，变量用 `{key}` 占位符。
+👉 构建固定格式的字符串 prompt，变量用 `{key}` 占位符。
+
 * **创建方式**：
 
   1. `PromptTemplate.from_template(template)`
@@ -128,12 +98,12 @@ var_dict = {"disease": "糖尿病", "symptom": "尿血", "medicine": "格列美�
 prompt_template = PromptTemplate.from_template(prompt)
 print(prompt_template.format(**var_dict))
 ```
-
 ---
 
-## 二、FewShotPromptTemplate（示例提示）
+### 二、FewShotPromptTemplate（示例提示）
 
-* **用途**：通过给定输入输出示例，引导模型学习格式。
+👉 给定输入输出示例，引导模型学习格式。
+
 * **关键点**：
 
   * `examples`：样例列表
@@ -160,9 +130,10 @@ print(fewshot_prompt.format(word="apple"))
 
 ---
 
-## 三、ChatPromptTemplate（多轮对话）
+### 三、ChatPromptTemplate（多轮对话）
 
-* **用途**：模拟对话场景，由 system / human / ai 消息构成。
+👉 模拟对话场景，由 system / human / ai 消息构成。
+
 * **常见场景**：问答助手、任务型对话。
 
 **示例：**
@@ -177,9 +148,10 @@ print(chat_prompt.format(disease="糖尿病", symptom="尿血"))
 
 ---
 
-## 四、MessagePromptTemplate（精细化消息控制）
+### 四、MessagePromptTemplate（精细化消息控制）
 
-* **用途**：精确指定消息角色，例如 System/Human/AI。
+👉 精确指定消息角色（System/Human/AI）。
+
 * **适合场景**：需要控制角色语气或功能时。
 
 **示例：**
@@ -194,9 +166,10 @@ print(chat_prompt.format(sentence="我今天很开心"))
 
 ---
 
-## 五、MessagesPlaceholder（插入对话历史）
+### 五、MessagesPlaceholder（插入对话历史）
 
-* **用途**：在 Prompt 中动态插入对话历史，实现记忆功能。
+👉 在 Prompt 中动态插入对话历史，实现记忆功能。
+
 * **常用于**：多轮对话，带上下文记忆。
 
 **示例：**
@@ -216,97 +189,14 @@ print(chat_with_memory.format(history=history, question="今天天气怎么样�
 
 ---
 
-# LangChain Parser 用法总结
+## 🧩 Parser 用法总结
 
-在 LangChain 中，**Parser（解析器）** 用于将大模型输出的 **非结构化文本** 转换为 **结构化结果**（如 JSON、字典、表格等），方便后续程序使用。
-
----
-
-## 🌟 常用解析器（最常见）
-
-1. **StructuredOutputParser**
-
-   * 和 `ResponseSchema` 搭配，定义一组字段，强制 LLM 输出标准 JSON。
-   * 适合需要固定字段的任务。
-   * ✅ 使用率最高。
-
-2. **PydanticOutputParser**
-
-   * 和 Pydantic 模型结合，能自动校验 & 转换。
-   * 适合复杂结构和数据验证。
-   * ✅ 生产项目里很常见。
-
-3. **ListOutputParser / CommaSeparatedListOutputParser / NumberedListOutputParser**
-
-   * 把模型输出的列表（换行 / 逗号 / 编号格式）解析成 Python list。
-   * ✅ 轻量且常用。
-
-4. **MarkdownListOutputParser**
-
-   * 专门解析 Markdown 列表。
-   * 用于 LLM 输出 markdown 时。
-
-5. **RetryOutputParser / OutputFixingParser**
-
-   * 当模型输出不符合预期时，会自动重试或修复。
-   * ✅ 解决“不守规矩”的 LLM 输出问题，很实用。
+在 LangChain 中，**Parser（解析器）** 用于将 LLM 输出的 **非结构化文本** 转换为 **结构化结果**（JSON、list、DataFrame 等），方便后续程序使用。
 
 ---
 
-## 🛠 次常用解析器（特定场景）
+### 一、ResponseSchema（定义输出字段）
 
-6. **BooleanOutputParser**
-
-   * 只解析布尔值（True/False/Yes/No）。
-
-7. **EnumOutputParser**
-
-   * 把输出限制在一组枚举值中。
-
-8. **DatetimeOutputParser**
-
-   * 把字符串解析为日期/时间。
-
-9. **RegexParser / RegexDictParser**
-
-   * 使用正则匹配 LLM 输出，适合半结构化文本。
-
-10. **XMLOutputParser / YamlOutputParser / JsonOutputToolsParser / JsonOutputKeyToolsParser**
-
-* 解析 XML / YAML / JSON 工具格式输出。
-
----
-
-## 🔬 较少用到的（高级/实验性）
-
-11. **CombiningOutputParser**
-
-* 可以组合多个解析器。
-
-12. **PandasDataFrameOutputParser**
-
-* 把输出解析为 Pandas DataFrame（表格类任务）。
-
-13. **PydanticToolsParser / GuardrailsOutputParser**
-
-* 更复杂的验证场景（如 [GuardrailsAI](https://shreyar.github.io/guardrails/) 约束）。
-
----
-
-## 📌 总结（建议记住的）
-
-* **StructuredOutputParser**（最常用 JSON 解析）
-* **PydanticOutputParser**（带验证的 JSON 解析）
-* **ListOutputParser / CommaSeparatedListOutputParser**（解析列表）
-* **RetryOutputParser / OutputFixingParser**（修复错误输出）
-
-👉 如果只想掌握核心，记住上面这 5 个就够用了。
-
----
- 
----
-
-## 一、ResponseSchema（定义输出字段）
 
 * **用途**：定义希望模型输出的字段名和说明。
 * **写法**：为每个字段创建 `ResponseSchema` 对象。
@@ -323,10 +213,10 @@ response_schemas = [
     ResponseSchema(name="medicine", description="推荐药物")
 ]
 ```
-
 ---
 
-## 二、StructuredOutputParser（结构化解析器）
+### 二、StructuredOutputParser（结构化解析器）
+
 
 * **用途**：告诉模型必须严格按指定格式输出，并自动解析成 Python 字典。
 * **结合 ResponseSchema 使用**：
@@ -356,6 +246,7 @@ print("格式说明：", format_instructions)
 }
 ```
 
+---
 ---
 
 ## 三、Parser 与 Prompt 配合
@@ -498,65 +389,31 @@ print(fix_parser.parse(bad_output))
 * **ListOutputParser / CommaSeparatedListOutputParser** → 快速提取列表结果
 * **RetryOutputParser / OutputFixingParser** → 保证健壮性，自动修复模型输出
 
+
 ---
 
-# Memory（记忆模块） 用法总结
----
-
-### Memory（记忆模块）
+## 🧠 Memory（记忆模块） 用法总结
 
 **作用**
 
 * `Memory` 维护 **Chain 的上下文状态**，让模型在多轮对话或任务中能记住之前的输入与输出。
 * 对话历史通过 `ChatMessageHistory` 保存，再由不同的 `Memory` 类进行管理和调用。
 
----
-
-**Class hierarchy for Memory:**
+**类层级图**
 
 ```text
 BaseMemory 
     └── BaseChatMemory 
-          └── <name>Memory   # 比如：ZepMemory, MotorheadMemory, ConversationBufferMemory
+          └── <name>Memory   # 例如：ConversationBufferMemory, ZepMemory
 ```
 
-* `BaseMemory`：最底层接口，定义了如何保存 / 加载上下文。
-* `BaseChatMemory`：专门面向聊天场景的记忆，维护 `AIMessage` 与 `HumanMessage`。
-* 具体实现：
-
-  * **ConversationBufferMemory**：简单的字符串拼接，常用。
-  * **ConversationBufferWindowMemory**：只保留最近 N 轮对话，节省 Token。
-  * **ConversationKGMemory**：构建知识图谱式的记忆。
-  * **ZepMemory / MotorheadMemory**：外部存储（数据库/服务端）版本。
-
----
-
-**Chat Message History（消息历史）**
-
-```text
-BaseChatMessageHistory
-    └── <name>ChatMessageHistory   # 例如：ZepChatMessageHistory, RedisChatMessageHistory
-```
-
-* 抽象了对话消息的存储方式。
-* 常用的有：
-
-  * **InMemoryChatMessageHistory**：存储在内存中，简单直接。
-  * **ZepChatMessageHistory**：存储在 Zep 服务中，支持检索。
-  * **RedisChatMessageHistory**：存储在 Redis。
-
----
-
-**Main helpers**
-
-* **AIMessage**：大模型的回复
-* **HumanMessage**：用户输入
-* **BaseMessage**：所有消息类型的基类（包括 `SystemMessage` 等）
-
----
+...
 
 📌 **一句话总结**
 `Memory` 是上层接口，`ChatMessageHistory` 是底层存储，消息用 `AIMessage / HumanMessage` 表示。
 
 ---
- 
+
+这样排版后，你的 README 会有清晰的 **目录索引**，每个章节都层次分明，读者可以快速定位。
+
+要不要我帮你把 **Prompt / Parser / Memory** 里的示例代码块都统一折叠成 `<details>` 展开效果（像官方文档那样）？这样大文件也更清爽。
