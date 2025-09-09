@@ -3,19 +3,10 @@ import langsmith
 import getpass
 import os
 from dotenv import load_dotenv
-from langchain_core.prompts import PromptTemplate
-from langchain_core.messages import HumanMessage, SystemMessage, AIMessage
-from langchain_core.prompts import PromptTemplate, FewShotPromptTemplate, ChatPromptTemplate
-from langchain_core.prompts import HumanMessagePromptTemplate, SystemMessagePromptTemplate, MessagesPlaceholder
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser,PydanticOutputParser,ListOutputParser,RetryOutputParser,OutputFixingParser,CommaSeparatedListOutputParser
 from langchain_community.llms import Tongyi
-from langchain.memory import ConversationBufferMemory
-from pydantic import BaseModel, Field
-from langchain.chains import ConversationChain
-from langchain_core.runnables.history import RunnableWithMessageHistory
 from langchain_community.chat_message_histories import ChatMessageHistory
 from langchain_core.messages import *
-
+from langchain_core.messages.utils import count_tokens_approximately, trim_messages
 
 if load_dotenv("../record.env"):
     key = os.environ["QWEN_API_KEY"]
@@ -48,3 +39,25 @@ def test1():
 """
 test2 在test1基础上，实现对话的裁剪，控制上下文窗口的长度
 """
+def test2():
+
+    messages = []
+    messages.append(SystemMessage(content="你是一个专业医生，负责根据病人情况诊断病情和开处处方"))
+    messages.append(HumanMessage(content="我肚子疼怎么办"))
+    messages.append(AIMessage(content="你好，我是医生。你肚子痛多久了？是突然发作的还是慢慢开始的？疼痛的位置在哪里？是持续性的还是阵发性的？有没有其他症状，比如发烧、恶心、呕吐、腹泻或者便秘？"))
+    messages.append(HumanMessage(content="十几天，持续的，有便秘"))
+
+    print(messages)
+    print("*"*100)
+    messages = trim_messages(
+        messages=messages,
+        max_tokens=30,
+        token_counter=count_tokens_approximately, #基于消息数量可以使用len
+        strategy="last",
+        allow_partial=False,
+        end_on=("ai", "human"),
+        start_on=("tool", "human", "sys"),
+        include_system=True
+    )
+    print(messages)
+

@@ -6,7 +6,6 @@
 1. [基础概念](#基础概念)
    * 1.1 [消息类型](#消息类型)
    * 1.2 [常见接口](#常见接口)
-   * 1.3 [消息裁剪](#消息裁剪)
 2. [LangChain 消息对象](#LangChain-消息对象)
    * 2.1 [SystemMessage](#SystemMessage)
    * 2.2 [HumanMessage](#HumanMessage)
