@@ -227,6 +227,120 @@ print(final_response.content)  # "The result of 8 times 7 is 56."
 ```
 
 ---
+---
+
+## 多工具调用示例
+
+当我们绑定多个工具时，模型会根据语义自动选择调用哪个工具。
+
+### 1. 定义多个工具
+
+```python
+from langchain_core.tools import tool
+
+@tool
+def gcd(a: int, b: int) -> int:
+    """返回 a 和 b 的最大公约数"""
+    while b:
+        a, b = b, a % b
+    return a
+
+@tool
+def pow(base: int, exp: int) -> int:
+    """计算 base^exp"""
+    return base ** exp
+
+@tool
+def compute_similarity(x: int, y: int) -> str:
+    """比较两个数是否接近（差值/较大值 < 0.1 认为接近）"""
+    ratio = abs(x - y) / max(x, y)
+    return "接近" if ratio < 0.1 else "不接近"
+```
+
+### 2. 绑定到模型
+
+```python
+from langchain_openai import ChatOpenAI
+from langchain_core.messages import HumanMessage, ToolMessage
+
+llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+tools = [compute_similarity, gcd, pow]
+llm_with_tools = llm.bind_tools(tools)
+```
+
+### 3. 用户提问
+
+```python
+question = HumanMessage(content="18337834和124932接近吗？")
+response = llm_with_tools.invoke([question])
+print(response.tool_calls)
+```
+
+可能输出：
+
+```python
+[{'name': 'compute_similarity', 'args': {'x': 18337834, 'y': 124932}, 'id': 'call_1'}]
+```
+
+### 4. 执行工具并返回结果
+
+```python
+tool_call = response.tool_calls[0]
+tool_name, tool_args = tool_call["name"], tool_call["args"]
+
+tool_map = {t.name: t for t in tools}
+tool_result = tool_map[tool_name].invoke(tool_args)
+
+tool_msg = ToolMessage(
+    content=str(tool_result),
+    name=tool_name,
+    tool_call_id=tool_call["id"]
+)
+
+final_response = llm_with_tools.invoke([question, response, tool_msg])
+print(final_response.content)
+```
+
+输出示例：
+
+```
+18337834 和 124932 不接近，因为它们的差距远大于 10%。
+```
+
+---
+
+## 常见疑难点记录
+
+### 1. `Tongyi` 没有 `bind_tools`
+
+社区模型 `Tongyi` 早期版本没有实现 `bind_tools`，需要升级到支持 **Tool Calling** 的版本，或者改用 `ChatOpenAI` / `ChatAnthropic`。
+
+### 2. 工具递归调用报错
+
+如果在工具函数内部直接调用自己（例如 `gcd` 递归时用了 `gcd(...)` 而不是普通函数），会导致 **Tool 对象递归调用**，引发 `int object has no attribute parent_run_id` 报错。
+✅ 解决：把递归逻辑写在函数内部，不要再调用装饰后的 Tool 对象。
+
+```python
+@tool
+def gcd(a: int, b: int) -> int:
+    while b:
+        a, b = b, a % b
+    return a
+```
+
+### 3. 如何把工具执行结果传回模型
+
+必须封装为 `ToolMessage`，并保证 `tool_call_id` 与模型请求一致，否则模型不会识别。
+
+```python
+tool_msg = ToolMessage(
+    content=str(result),
+    name=tool_name,
+    tool_call_id=tool_call["id"]
+)
+```
+
+---
 
 ## 相关资源
 
@@ -237,4 +351,5 @@ print(final_response.content)  # "The result of 8 times 7 is 56."
 
 ---
 
+ 
  
