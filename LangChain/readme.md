@@ -8,6 +8,8 @@
   
 * 主要内容
   * [Prompt Engineer](./1_prompt.md)
-  * [LangChain](./2_lanchain.md)
-
+  * [LangChain基础](./2_lanchain.md)
+  * [Runnable(langchain)基础](./3_Runnable.md)
+  * [messages基础](./4_messages.md)
+  * [tools基础](./5_tools.md)
 ---
