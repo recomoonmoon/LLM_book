@@ -236,6 +236,7 @@ def get_history(session_id: str):
     if session_id not in store:
         store[session_id] = ChatMessageHistory()
     return store[session_id]
+
 # 5. 包装为带历史的 runnable
 with_history = RunnableWithMessageHistory(
     chain,
