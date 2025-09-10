@@ -1,7 +1,7 @@
 ### Langchain基础
 * 教程：
   * [大模型基础视频教程](https://www.bilibili.com/video/BV1Bo4y1A7FU/)
-
+  * [langchain官方文档](https://python.langchain.com/docs/concepts/)
 * 环境依赖
   * openai 调用API
   * dotenv 存储
@@ -12,4 +12,9 @@
   * [Runnable(langchain)基础](./3_Runnable.md)
   * [messages基础](./4_messages.md)
   * [tools基础](./5_tools.md)
+  * [memory记忆管理](./6_memory.md)
+  * [多模态数据](7_multimodality.md)
+  * [LCEL](8_LCEL.md)
+  * [文档加载器](9_load_datas.md)
+  * [文档切片器](10_textSplitter.md)
 ---
