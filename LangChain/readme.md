@@ -9,9 +9,9 @@
 * 主要内容
   * [Prompt Engineer](./1_prompt.md)
   * [LangChain基础](./2_lanchain.md)
-  * [Runnable(langchain)基础](./3_Runnable.md)
-  * [messages基础](./4_messages.md)
-  * [tools基础](./5_tools.md)
+  * [Runnable(langchain)可运行对象](./3_Runnable.md)
+  * [messages信息管理](./4_messages.md)
+  * [tools工具设计与调用](./5_tools.md)
   * [memory记忆管理](./6_memory.md)
   * [多模态数据](7_multimodality.md)
   * [LCEL](8_LCEL.md)
