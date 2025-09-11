@@ -17,4 +17,5 @@
   * [LCEL](8_LCEL.md)
   * [文档加载器](9_load_datas.md)
   * [文档切片器](10_textSplitter.md)
+  * [embedding模型](11_embedding.md)
 ---

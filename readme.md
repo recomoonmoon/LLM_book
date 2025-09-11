@@ -46,9 +46,17 @@
   
 * 学习langchain的核心概念：
   
-  * 提示词模板 
-  * 输出解析器Parser
-  * 排编工作流
+  * [Prompt Engineer](./LangChain/1_prompt.md)
+  * [Parser数据解析](./LangChain/2_parser.md)
+  * [Runnable(langchain)可运行对象](./LangChain/3_Runnable.md)
+  * [messages信息管理](./LangChain/4_messages.md)
+  * [tools工具设计与调用](./LangChain/5_tools.md)
+  * [memory记忆管理](./LangChain/6_memory.md)
+  * [多模态数据](/LangChain/7_multimodality.md)
+  * [LCEL](/LangChain/8_LCEL.md)
+  * [文档加载器](/LangChain/9_load_datas.md)
+  * [文档切片器](/LangChain/10_textSplitter.md)
+  * [embedding模型](/LangChain/11_embedding.md)
 
 * **成果：**
   * [代码与文档](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LangChain/)
