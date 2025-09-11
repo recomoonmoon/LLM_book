@@ -8,7 +8,7 @@
   
 * 主要内容
   * [Prompt Engineer](./1_prompt.md)
-  * [LangChain基础](./2_lanchain.md)
+  * [Parser数据解析](./2_parser.md)
   * [Runnable(langchain)可运行对象](./3_Runnable.md)
   * [messages信息管理](./4_messages.md)
   * [tools工具设计与调用](./5_tools.md)
