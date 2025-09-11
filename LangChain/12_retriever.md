@@ -22,6 +22,37 @@
 
 ---
 
+`langchain_community.vectorstores.FAISS` 底层依赖 `faiss`，需要额外安装。你有两个选择：
+(12_rag_faisss.py需要专门下载faiss)，如果chroma（12_rag_chroma.py），可以直接pip install chromadb运行。
+---
+
+### 方案 1：安装 CPU 版
+如果你没有 GPU（或不打算用 GPU），直接：
+```bash
+pip install faiss-cpu
+```
+---
+### 方案 2：安装 GPU 版
+如果你有 NVIDIA GPU，并且 CUDA 驱动已经装好，可以：
+```bash
+pip install faiss-gpu
+```
+---
+⚠️ 注意事项：
+* **Windows 下**，官方没有直接提供 `faiss` 的 wheel，`pip install faiss-cpu` 可能会失败。解决办法是：
+
+  1. 用 Conda 安装：
+     ```bash
+     conda install -c conda-forge faiss-cpu
+     ```
+     或者
+     ```bash
+     conda install -c conda-forge faiss-gpu
+     ```
+  2. 如果你必须 `pip install`，只能用别人打包的 wheel（不推荐，容易出问题）。
+
+---
+ 
 ## 1. Retrievers 检索器
 
 ### 1.1 前置知识

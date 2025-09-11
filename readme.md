@@ -57,6 +57,7 @@
   * [文档加载器](/LangChain/9_load_datas.md)
   * [文档切片器](/LangChain/10_textSplitter.md)
   * [embedding模型](/LangChain/11_embedding.md)
+  * [检索器和rag](./LangChain/12_retriever.md)
 
 * **成果：**
   * [代码与文档](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LangChain/)

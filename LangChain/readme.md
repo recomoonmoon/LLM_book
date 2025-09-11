@@ -5,6 +5,7 @@
 * 环境依赖
   * openai 调用API
   * dotenv 存储
+  * langchain Agent开发基础
   
 * 主要内容
   * [Prompt Engineer](./1_prompt.md)
@@ -18,4 +19,5 @@
   * [文档加载器](9_load_datas.md)
   * [文档切片器](10_textSplitter.md)
   * [embedding模型](11_embedding.md)
+  * [检索器与rag](12_retriever.md)
 ---
