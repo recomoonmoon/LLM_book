@@ -9,21 +9,13 @@
 1. [参考资料](#-参考资料)
 2. [环境准备](#-环境准备)
 3. [基础调用](#-基础调用)
-4. [Prompt 用法总结](#-prompt-用法总结)
-
-   * 4.1 [PromptTemplate（单轮字符串模板）](#一prompttemplate单轮字符串模板)
-   * 4.2 [FewShotPromptTemplate（示例提示）](#二fewshotprompttemplate示例提示)
-   * 4.3 [ChatPromptTemplate（多轮对话）](#三chatprompttemplate多轮对话)
-   * 4.4 [MessagePromptTemplate（精细化消息控制）](#四messageprompttemplate精细化消息控制)
-   * 4.5 [MessagesPlaceholder（插入对话历史）](#五messagesplaceholder插入对话历史)
-5. [Parser 用法总结](#-parser-用法总结)
-
-   * 5.1 [ResponseSchema（定义输出字段）](#一responseschema定义输出字段)
-   * 5.2 [StructuredOutputParser（结构化解析器）](#二structuredoutputparser结构化解析器)
-   * 5.3 [PydanticOutputParser（带验证的 JSON 解析）](#五-pydanticoutputparser带验证的-json-解析)
-   * 5.4 [ListOutputParser / CommaSeparatedListOutputParser](#六-listoutputparser--commaseparatedlistoutputparser解析列表)
-   * 5.5 [RetryOutputParser / OutputFixingParser](#七-retryoutputparser--outputfixingparser修复错误输出)
-6. [Memory 用法总结](#-memory记忆模块-用法总结)
+4. [Parser 用法总结](#-parser-用法总结)
+   * 4.1 [ResponseSchema（定义输出字段）](#一responseschema定义输出字段)
+   * 4.2 [StructuredOutputParser（结构化解析器）](#二structuredoutputparser结构化解析器)
+   * 4.3 [PydanticOutputParser（带验证的 JSON 解析）](#五-pydanticoutputparser带验证的-json-解析)
+   * 4.4 [ListOutputParser / CommaSeparatedListOutputParser](#六-listoutputparser--commaseparatedlistoutputparser解析列表)
+   * 4.5 [RetryOutputParser / OutputFixingParser](#七-retryoutputparser--outputfixingparser修复错误输出)
+5. [Memory 用法总结](#-memory记忆模块-用法总结)
 
 ---
 
@@ -70,124 +62,6 @@ print(llm.invoke("hello world"))
 
 ---
 
-## 💡 Prompt 用法总结
-
-Prompt 是大模型（LLM）的输入，可以是简单字符串，也可以是多轮对话消息。在 LangChain 中，Prompt 的设计方式影响模型的输出效果。
-
----
-
-### 一、PromptTemplate（单轮字符串模板）
-
-👉 构建固定格式的字符串 prompt，变量用 `{key}` 占位符。
-
-* **创建方式**：
-
-  1. `PromptTemplate.from_template(template)`
-  2. `PromptTemplate(template=..., input_variables=[...])`
-* **调用方式**：
-
-  * `.format(**vars)`
-  * 串联到 `chain` 使用
-
-**示例：**
-
-```python
-prompt = "---{disease}---有---{symptom}---症状，需要使用---{medicine}---药品进行治疗"
-var_dict = {"disease": "糖尿病", "symptom": "尿血", "medicine": "格列美脲"}
-
-prompt_template = PromptTemplate.from_template(prompt)
-print(prompt_template.format(**var_dict))
-```
----
-
-### 二、FewShotPromptTemplate（示例提示）
-
-👉 给定输入输出示例，引导模型学习格式。
-
-* **关键点**：
-
-  * `examples`：样例列表
-  * `example_prompt`：样例格式
-  * `suffix`：留出用户输入的位置
-
-**示例：**
-
-```python
-examples = [
-    {"word": "cat", "translation": "猫"},
-    {"word": "dog", "translation": "狗"}
-]
-example_prompt = PromptTemplate.from_template("英文: {word} -> 中文: {translation}")
-
-fewshot_prompt = FewShotPromptTemplate(
-    examples=examples,
-    example_prompt=example_prompt,
-    suffix="英文: {word} -> 中文:",
-    input_variables=["word"]
-)
-print(fewshot_prompt.format(word="apple"))
-```
-
----
-
-### 三、ChatPromptTemplate（多轮对话）
-
-👉 模拟对话场景，由 system / human / ai 消息构成。
-
-* **常见场景**：问答助手、任务型对话。
-
-**示例：**
-
-```python
-chat_prompt = ChatPromptTemplate.from_messages([
-    ("system", "你是一个医学助手。"),
-    ("human", "病人患有{disease}，出现了{symptom}，应该如何治疗？")
-])
-print(chat_prompt.format(disease="糖尿病", symptom="尿血"))
-```
-
----
-
-### 四、MessagePromptTemplate（精细化消息控制）
-
-👉 精确指定消息角色（System/Human/AI）。
-
-* **适合场景**：需要控制角色语气或功能时。
-
-**示例：**
-
-```python
-chat_prompt = ChatPromptTemplate.from_messages([
-    SystemMessagePromptTemplate.from_template("你是一个翻译助手。"),
-    HumanMessagePromptTemplate.from_template("请翻译这句话: {sentence}")
-])
-print(chat_prompt.format(sentence="我今天很开心"))
-```
-
----
-
-### 五、MessagesPlaceholder（插入对话历史）
-
-👉 在 Prompt 中动态插入对话历史，实现记忆功能。
-
-* **常用于**：多轮对话，带上下文记忆。
-
-**示例：**
-
-```python
-chat_with_memory = ChatPromptTemplate.from_messages([
-    ("system", "你是一个友好的助手。"),
-    MessagesPlaceholder(variable_name="history"),
-    ("human", "请继续回答: {question}")
-])
-history = [
-    {"role": "human", "content": "你好"},
-    {"role": "ai", "content": "你好，我能帮你什么？"}
-]
-print(chat_with_memory.format(history=history, question="今天天气怎么样？"))
-```
-
----
 
 ## 🧩 Parser 用法总结
 
