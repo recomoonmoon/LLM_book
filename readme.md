@@ -61,7 +61,8 @@
 
 * **成果：**
   * [代码与文档](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LangChain/)
-
+* **学习目标：**
+  * [实现医药问答agent](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LangChain/medical_qa_agent)
 ---
 ### 4. 大模型之训练
 

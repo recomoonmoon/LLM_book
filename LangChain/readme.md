@@ -2,6 +2,7 @@
 * 教程：
   * [大模型基础视频教程](https://www.bilibili.com/video/BV1Bo4y1A7FU/)
   * [langchain官方文档](https://python.langchain.com/docs/concepts/)
+  
 * 环境依赖
   * openai 调用API
   * dotenv 存储
@@ -21,4 +22,9 @@
   * [embedding模型](11_embedding.md)
   * [检索器与rag](12_retriever.md)
   * [事件触发器](13_callBack.md)
+* 章节作业：
+  * 利用提示词模板 + RAG + Parser + 消息管理 + tool 实现一个Agent。
+  * 模板使用的是医药问答agent
+  * 各个技术不一定要拘于形式地使用，比如rag可以key为关键词，value为索引，然后数据存储在关系数据库等地方。这样可以通过多属性索引快速查找相关数据又减少存储。
+  
 ---
