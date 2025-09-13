@@ -64,15 +64,13 @@
 * **学习目标：**
   * [实现医药问答agent](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LangChain/medical_qa_agent)
 ---
-### 4. 大模型之训练
-
+### 4. 大模型之基础
+* 参考: [斯坦福CS336](https://online.stanford.edu/courses/cs336-language-modeling-scratch)
 * 重点理解：
-
-  * 数据并行（DP）、模型并行（MP）、流水线并行（PP）
-  * ZeRO 优化
-  * 混合精度训练（FP16/BF16）
-  * 高效训练框架（如 DeepSpeed、Megatron-LM）
-
+  * Transformer 
+  * Tokenization
+  * Experiments
+  * 工作流程
 ---
 
 ### 5. 大模型之微调
