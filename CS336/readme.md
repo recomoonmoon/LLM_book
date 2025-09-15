@@ -322,4 +322,350 @@ def decode_utf8_bytes_to_str_wrong(bytestring: bytes):
 
 ---
 
+ 好的，我来翻译 **第四章 Transformer 语言模型架构** 部分。
+
+---
+ 
+---
+
+# 第三章 实验 (Experiments)
+
+在这一章中，你需要运行实验来验证自己实现的 **BPE 分词器** 和 **Transformer 语言模型** 是否正确工作，并且复现出类似论文或教材中的结果。
+
+---
+
+## 3.1 TinyStories 上的实验
+
+1. **数据集**
+
+   * 使用 TinyStories 数据集（Eldan & Li, 2023）。
+   * 数据由儿童故事组成，规模小、容易快速实验。
+
+2. **任务目标**
+
+   * 先在 TinyStories 上训练 BPE 分词器。
+   * 再用该分词器训练一个小规模的 Transformer LM。
+
+3. **评估指标**
+
+   * **压缩率 (compression ratio)**：平均每个 token 对应多少字节。
+   * **困惑度 (perplexity)**：标准语言建模指标，越低越好。
+
+4. **实验要求**
+
+   * 记录训练时间、内存占用。
+   * 尝试不同超参数（如 vocab size, d\_model）。
+   * 对比不同分词器的效果。
+
+---
+
+## 3.2 OpenWebText 上的实验
+
+1. **数据集**
+
+   * 使用 OpenWebText 的一个子集（Gokaslan & Cohen, 2019）。
+   * 这是 GPT-2 使用过的数据集，规模较大，更接近真实场景。
+
+2. **任务目标**
+
+   * 在该数据集上训练更大规模的分词器（例如 vocab=32k）。
+   * 训练一个更大的 Transformer LM。
+
+3. **实验要求**
+
+   * 记录耗时与 GPU/CPU 占用。
+   * 分析性能瓶颈（是分词、数据加载，还是模型训练）。
+   * 对比不同 vocab size 的压缩率与 perplexity。
+
+---
+
+## 3.3 消融实验 (Ablation Studies)
+
+1. **为什么做消融实验？**
+
+   * 验证模型的某个设计是否必要。
+   * 例如：去掉特殊 token、减少层数、换归一化方法。
+
+2. **具体要求**
+
+   * 至少做一个消融实验。
+   * 比较实验结果，并解释差异。
+
+---
+
+## 3.4 结果复现与报告
+
+* 你需要写一份简短实验报告，总结：
+
+  * 分词器训练结果（词表大小、压缩率）。
+  * 语言模型训练结果（困惑度、泛化性能）。
+  * 消融实验发现。
+
+* 报告格式：
+
+  * 可以是 Markdown 文件。
+  * 或者写在代码注释 / Jupyter Notebook 里。
+
+---
+
+ 
+## 第四章 Transformer 语言模型架构（翻译）
+
+### Transformer LM
+
+在本作业中，我们将实现一个标准的 **Transformer 语言模型 (LM)**。
+模型由以下几个部分组成：
+
+1. **嵌入层 (Embedding layer)**：将 token IDs 转换为向量表示。
+2. **一系列 Transformer 块**：每个块包含多头自注意力和前馈网络。
+3. **最终线性层与 softmax 输出**：预测下一个 token 的概率分布。
+
+---
+
+### Token Embeddings（词嵌入）
+
+* 输入是整数 ID（来自 BPE 分词器）。
+* 每个 ID 被映射到一个维度为 `d_model` 的向量。
+* 嵌入矩阵大小为 `(vocab_size, d_model)`。
+* 我们还需要加上 **位置编码 (positional embeddings)**，以便模型感知序列顺序。
+
+---
+
+### Pre-norm Transformer Block（预归一化 Transformer 块）
+
+* 每个 Transformer 块由两部分组成：
+
+  1. **多头自注意力层 (Multi-head Self Attention)**
+  2. **前馈网络 (Feedforward Network, FFN)**
+* 每个子层之前应用 **RMSNorm（均方根归一化）**，再进入子层。
+* 使用 **残差连接**：
+
+  $$
+  x = x + \text{Sublayer}(\text{Norm}(x))
+  $$
+
+---
+
+### 输出归一化与嵌入（Output Normalization & Embedding）
+
+* 在最后一个 Transformer 块之后，应用一个归一化层。
+* 接着是一个 **线性层 (Linear Layer)**，其权重共享输入嵌入矩阵（即 **权重绑定 weight tying**）。
+* 该线性层将隐藏状态投影到词表大小的向量，用于 softmax。
+
+---
+
+### 备注：批处理、Einsum 与高效计算
+
+* 在实现注意力和 FFN 时，需要关注 **矩阵乘法效率**。
+* 推荐使用 `torch.einsum` 或 `torch.matmul`，确保维度清晰、可读性高。
+* 需要支持批处理输入 `(batch_size, seq_len, d_model)`。
+
+---
+
+### 数学符号与内存布局
+
+* 输入张量形状： `(B, T, C)`
+
+  * `B = batch_size`
+  * `T = 序列长度`
+  * `C = d_model`
+* 注意力机制需要计算 `Q, K, V`：
+
+  * `Q = X W_Q`
+  * `K = X W_K`
+  * `V = X W_V`
+* 注意力权重：
+
+ ![img.png](img.png) 
+* 在实现时，需要确保张量维度对齐，并避免不必要的复制。
+
+---
+ 
+---
+
+# 第五章 基本构建模块 (Basic Building Blocks)
+
+在实现完整的 Transformer 语言模型之前，我们需要先构建一些 **核心模块 (building blocks)**。这些模块是神经网络的最小单元，会在整个模型中被多次复用。
+
+---
+
+## 5.1 线性层 (Linear Layer)
+
+1. **功能**
+
+   * 线性层实现仿射变换：
+
+     ![img_1.png](img_1.png)
+
+     其中 $x$ 是输入，$W$ 是权重矩阵，$b$ 是偏置。
+
+2. **实现要求**
+
+   * 使用 `torch.nn.Module` 自定义实现，而不是直接用 `nn.Linear`。
+   * 参数初始化：
+
+     * 权重 $W$ 使用 **Kaiming 初始化** 或 **Xavier 初始化**。
+     * 偏置 $b$ 初始化为 0。
+
+3. **输入输出形状**
+
+   * 输入：`(B, T, in_dim)`
+   * 输出：`(B, T, out_dim)`
+
+---
+
+## 5.2 嵌入层 (Embedding Layer)
+
+1. **功能**
+
+   * 将 token ID（整数）映射到向量表示。
+   * 实现类似 `nn.Embedding` 的功能。
+
+2. **实现细节**
+
+   * 参数矩阵形状 `(vocab_size, d_model)`。
+   * 输入是 `(B, T)` 的整数张量，输出是 `(B, T, d_model)`。
+
+3. **权重共享 (Weight Tying)**
+
+   * 在语言模型中，嵌入矩阵会与输出层线性变换共享权重。
+   * 这样可以减少参数数量，并提升泛化性能。
+
+---
+
+## 5.3 RMSNorm（均方根归一化）
+
+1. **为什么不用 LayerNorm？**
+
+   * LayerNorm 依赖于均值和方差，计算开销较大。
+   * RMSNorm 只使用均方根 (root mean square)，计算更高效。
+
+2. **定义**
+   给定输入向量 $x$，RMSNorm 的输出为：
+
+  ![img_2.png](img_2.png)
+
+   * $g$ 是可学习的缩放参数。
+   * $\epsilon$ 是数值稳定性常数。
+
+3. **实现要求**
+
+   * 不要用 PyTorch 自带的 `nn.LayerNorm`。
+   * 自己实现 RMSNorm，并支持 `(B, T, C)` 的输入。
+
+---
+
+## 5.4 前馈网络 (Feedforward Network, FFN)
+
+1. **结构**
+
+   * FFN 通常包含两层线性变换和一个激活函数：
+
+    ![img_3.png](img_3.png)
+
+2. **细节**
+
+   * 隐藏层维度一般取 $4 \times d_{model}$。
+   * 激活函数使用 **GELU** 或 **ReLU**。
+
+3. **实现要求**
+
+   * 输入形状 `(B, T, d_model)`，输出相同。
+   * 确保高效支持批处理。
+
+---
+好，我们接着翻译 **第六章：注意力机制 (Attention Mechanism)**。
+
+---
+
+# 第六章 注意力机制 (Attention Mechanism)
+
+注意力机制是 Transformer 的核心。它允许模型在预测下一个 token 时“关注”输入序列中的相关位置，而不是仅依赖固定的上下文窗口。
+
+---
+
+## 6.1 自注意力 (Self-Attention)
+
+1. **定义**
+    
+   ![img_7.png](img_7.png)
+
+2. **注意力权重**
+
+  ![img_6.png](img_6.png)
+
+3. **输出**
+
+   * 最终输出为：
+
+    ![img_5.png](img_5.png)
+
+---
+
+## 6.2 缩放点积注意力 (Scaled Dot-Product Attention)
+
+* 之所以要除以 $\sqrt{d_k}$，是为了避免在高维空间中点积过大，导致 softmax 进入梯度消失区间。
+* 在实现中：
+
+  * 输入形状 `(B, T, d_model)`。
+  * 输出形状 `(B, T, d_model)`。
+
+---
+
+## 6.3 掩码 (Masking)
+
+1. **因果掩码 (Causal Mask)**
+
+   * 在语言模型中，预测位置 $t$ 不能看到未来的 token。
+   * 因此，需要掩盖未来位置：
+
+     $$
+     \alpha_{ij} = 0 \quad \text{if } j > i
+     $$
+
+2. **实现方式**
+
+   * 使用一个上三角矩阵，mask 掉未来的 logits。
+   * 在 PyTorch 中，可以用 `torch.triu` 构造掩码。
+
+---
+
+## 6.4 多头注意力 (Multi-Head Attention)
+
+1. **动机**
+
+   * 单一的注意力头可能无法捕捉到所有依赖关系。
+   * 多头机制允许模型在不同子空间中学习不同的注意力模式。
+
+2. **实现**
+
+   * 将输入投影到 $h$ 个子空间：
+
+     $$
+     Q_h, K_h, V_h
+     $$
+   * 在每个子空间独立计算注意力。
+   * 将所有头的结果拼接，再通过线性层投影回原维度。
+
+3. **公式**
+
+   ![img_4.png](img_4.png)
+---
+
+## 6.5 实现注意事项
+
+* **张量形状**：
+
+  * 输入：`(B, T, d_model)`
+  * 经过拆分头部后：`(B, h, T, d_head)`
+  * 输出拼接回 `(B, T, d_model)`
+
+* **高效计算**
+
+  * 尽量使用 `einsum` 或 `matmul` 避免显式 for 循环。
+  * 注意保存中间结果，减少重复计算。
+
+---
+
+ 
  

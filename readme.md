@@ -67,8 +67,8 @@
 ### 4. 大模型之基础
 * 参考: [斯坦福CS336](https://online.stanford.edu/courses/cs336-language-modeling-scratch)
 * 重点理解：
-  * Transformer 
-  * Tokenization
+  * Transformer(前面有手撕，略)
+  * [BPE Tokenization](https://github.com/recomoonmoon/LLM_learning_book/blob/master/CS336/Tokenization)  
   * Experiments
   * 工作流程
 ---
