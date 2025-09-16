@@ -24,7 +24,10 @@ class Tokenizer:
             - 保存 merges 规则
             - 将特殊符号按照长度从长到短排序，保存到 self.special_tokens
         """
-        pass
+        self.vocab = vocab
+        self.merges = merges
+        self.vocab_reversed = {v:k for k,v in self.vocab.items()}
+        self.special_tokens = sorted(special_tokens or [], key=lambda x: len(x))
 
     @classmethod
     def from_files(cls, vocab_filepath: str, merges_filepath: str,

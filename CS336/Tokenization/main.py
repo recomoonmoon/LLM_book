@@ -1,4 +1,5 @@
 #2.1 Unicode 标准
+import re
 
 print(ord("牛"))
 print(chr(29275))
@@ -55,23 +56,7 @@ def test_2_c():
 
 
 """---------------------------------------------------------------------------------------"""
-#2.3 子词分词（Subword Tokenization）
-class BPE:
-    def __init__(self, special_tokens):
-        self.special_tokens = special_tokens
-        self.vocab = {i:bytes([i]) for i in range(256)}
-        for token in self.special_tokens:
-            self.vocab[len(self.vocab)] = token.encode("utf-8")
-        self.split_slogon = "<|endoftext|> "
-    def split_chunk(self, text):
-        #分成多个chunk
-        chunks = text.split(self.split_slogon)
-        return chunks
 
-    def process_chunk(self, chunk):
-        #去除特殊标志
-        for special_token in self.special_tokens:
-            chunk.replace(special_token, "")
 
 
 
