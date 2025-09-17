@@ -24,13 +24,16 @@ class Tokenizer:
             - 保存 merges 规则
             - 将特殊符号按照长度从长到短排序，保存到 self.special_tokens
         """
+
+
         self.vocab = vocab
         self.merges = merges
         self.vocab_reversed = {v:k for k,v in self.vocab.items()}
-        self.special_tokens = sorted(special_tokens or [], key=lambda x: len(x))
+        #优先处理长特殊符号，以免截断（先处理短的然后把长的截取掉了）
+        self.special_tokens = sorted(special_tokens or [], key=lambda x: -len(x))
 
     @classmethod
-    def from_files(cls, vocab_filepath: str, merges_filepath: str,
+    def from_files(self, vocab_filepath: str, merges_filepath: str,
                    special_tokens: list[str] | None = None) -> "Tokenizer":
         """
         从文件中加载词表和 merges 规则，构造一个 Tokenizer 实例。
@@ -48,7 +51,16 @@ class Tokenizer:
             - 读取 merges 文件，建立 [(a, b), ...] 的合并规则列表（元素是 bytes 对）
             - 调用 cls(vocab, merges, special_tokens) 返回一个分词器实例
         """
-        pass
+        vocab_file = open(vocab_filepath, 'r', encoding='utf-8')
+        for line in vocab_file.readlines():
+            id_str, token_str = line.strip().split("\t")
+            self.vocab[int(id_str)] = token_str.encode("utf-8")
+
+        merge_file = open(merges_filepath, 'r', encoding='utf-8')
+        for line in merge_file:
+
+
+
 
     def encode(self, text: str) -> list[int]:
         """
