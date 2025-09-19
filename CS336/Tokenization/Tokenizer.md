@@ -6,6 +6,12 @@
 本项目实现了一个 **字节级 BPE（Byte Pair Encoding）分词器训练器**，支持高效的并行预分词与合并操作优化。该实现基于 **Stanford CS336 作业**，并在 TinyStories 数据集上进行了测试。
 
 ---
+## 📖 参考
+
+* Stanford CS336 作业说明
+* [Sennrich et al. (2016) - Neural Machine Translation of Rare Words with Subword Units](https://arxiv.org/abs/1508.07909)
+* HuggingFace `tokenizers` 源码
+
 
 ## 📌 功能特性
 
@@ -77,12 +83,11 @@ uv run pytest tests/test_train_bpe.py
  * 如果有余力，可以实现其训练过程
 
 ---
-
-## 📖 参考
-
-* Stanford CS336 作业说明
-* [Sennrich et al. (2016) - Neural Machine Translation of Rare Words with Subword Units](https://arxiv.org/abs/1508.07909)
-* HuggingFace `tokenizers` 源码
+## 资料：
+* Tokenizer.py 实现了tokenizer和相关方法的文件
+* main.py 包含了数个作业相关代码和答案的文件
+* 生成部分的代码（或许不应该放在这个文件夹，但好像其他的也不合适）
+    
 
 ---
 
