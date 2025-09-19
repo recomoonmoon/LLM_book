@@ -7,11 +7,12 @@
 1. **作业概览 (Assignment Overview)**
 
 2. **字节对编码（Byte-Pair Encoding, BPE）分词器**
+   
 
-   * Unicode 标准
-   * Unicode 编码方式
-   * 子词（Subword）分词
-   * BPE 分词器训练
+   * [Unicode 标准](./Tokenization/main.py)
+   * [Unicode 编码方式](./Tokenization/main.py)
+   * [子词（Subword）分词](./Tokenization/Tokenizer.md) 
+   * BPE 分词器训练 
    * BPE 分词器实验
    * BPE 分词器：编码与解码
 
@@ -19,8 +20,9 @@
      * 文本解码
 
 3. **实验部分 (Experiments)**
+  实验需要准备 TinyStoriesV2数据集
 
-4. **Transformer 语言模型架构**
+4. **[Transformer 语言模型架构](./Transformer/Transformer.md)**
 
    * Transformer LM
    * 词嵌入 (Token Embeddings)
