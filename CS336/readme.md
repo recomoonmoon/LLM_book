@@ -669,5 +669,172 @@ def decode_utf8_bytes_to_str_wrong(bytestring: bytes):
 
 ---
 
+## 9.文本生成
+
+我帮你逐段拆解这段 `decode` 代码，解释它在做什么（相当于一个简化版的 GPT 文本生成函数）：
+
+---
+
+### 1. 装饰器
+
+```python
+@torch.no_grad()
+```
+
+* 作用：关闭梯度计算，节省显存、加快推理速度。
+* 推理阶段不需要反向传播，所以加上它。
+
+---
+
+### 2. 函数定义
+
+```python
+def decode(
+    model,
+    tokenizer,
+    prompt: str,
+    max_new_tokens: int = 50,
+    temperature: float = 1.0,
+    top_p: float = 1.0,
+    device: str = 'cuda' if torch.cuda.is_available() else 'cpu'
+) -> str:
+```
+
+参数说明：
+
+* `model`: Transformer 语言模型。
+* `tokenizer`: 编码/解码工具，能把字符串转为 token IDs，再解码回文本。
+* `prompt`: 输入的上下文。
+* `max_new_tokens`: 最多生成多少新 token。
+* `temperature`: 控制随机性，>1 更随机，<1 更确定。
+* `top_p`: nucleus sampling 的阈值，保留累计概率 ≤ p 的 token。
+* `device`: GPU/CPU。
+
+---
+
+### 3. 初始化
+
+```python
+model.eval()
+model.to(device)
+
+input_ids = tokenizer.encode(prompt)
+input_ids = torch.tensor([input_ids], dtype=torch.long, device=device)
+
+eos_id = tokenizer.encode("<|endoftext|>")[0]
+```
+
+* `model.eval()`：切换到推理模式（关闭 dropout 等）。
+* `input_ids`：把 prompt 编成 token id，并放入 GPU/CPU。
+* `eos_id`：取 `<|endoftext|>` 的 token id，用来判断是否结束生成。
+
+---
+
+### 4. 逐步生成 token
+
+```python
+for _ in range(max_new_tokens):
+    logits = model(input_ids)        # (1, seq_len, vocab_size)
+    logits = logits[:, -1, :]        # 取最后一个位置的预测分布
+```
+
+* `model(input_ids)`：前向计算，得到每个位置的词预测 logits。
+* 只取最后一个位置的 logits，因为我们只关心“接下来可能的下一个词”。
+
+---
+
+### 5. 应用温度系数
+
+```python
+logits = logits / max(temperature, 1e-8)
+probs = F.softmax(logits, dim=-1)
+```
+
+* 温度缩放：
+
+  * 如果 `temperature < 1` → 分布更尖锐，更确定。
+  * 如果 `temperature > 1` → 分布更平滑，更随机。
+* `softmax` 把 logits 转为概率分布。
+
+---
+
+### 6. Top-p (核采样)
+
+```python
+sorted_probs, sorted_indices = torch.sort(probs, descending=True)
+cumulative_probs = torch.cumsum(sorted_probs, dim=-1)
+
+cutoff = cumulative_probs > top_p
+cutoff[..., 1:] = cutoff[..., :-1].clone()
+cutoff[..., 0] = False
+```
+
+* `torch.sort`：按概率从大到小排序。
+* `cumulative_probs`：累计概率。
+* `cutoff`: 标记累计概率超过 `top_p` 的部分。
+
+  * 例如 `top_p=0.9`，则只保留累计概率 ≤0.9 的 token。
+  * 这样避免长尾的低概率 token。
+* `cutoff[..., 0] = False`：保证至少保留最高概率的那个词。
+
+---
+
+### 7. 归一化 & 采样
+
+```python
+sorted_probs[cutoff] = 0
+sorted_probs = sorted_probs / sorted_probs.sum(dim=-1, keepdim=True)
+
+next_token = torch.multinomial(sorted_probs, num_samples=1)
+next_token = sorted_indices.gather(-1, next_token)
+```
+
+* 把超出 top\_p 的 token 概率置零。
+* 重新归一化。
+* `torch.multinomial`：按分布采样一个 token id。
+* `sorted_indices.gather`：把采样结果映射回原始 token id。
+
+---
+
+### 8. 拼接 & 停止条件
+
+```python
+input_ids = torch.cat([input_ids, next_token], dim=-1)
+
+if next_token.item() == eos_id:
+    break
+```
+
+* 把新 token 拼到已有序列后面。
+* 如果采样到 `<|endoftext|>`，则提前结束。
+
+---
+
+### 9. 解码返回
+
+```python
+return tokenizer.decode(input_ids[0].tolist())
+```
+
+* 把最终 token id 序列解码成字符串。
+* 输出包含 prompt + 生成的新内容。
+
+---
+
+✅ **总结一下**
+这段 `decode` 就是一个 **逐 token 生成文本的推理循环**，流程是：
+
+1. 输入 prompt → 编码成 token ids
+2. 模型预测下一个词的概率分布
+3. 应用温度缩放 + Top-p 过滤
+4. 从分布中采样一个 token
+5. 拼接到序列，继续预测
+6. 如果遇到 `<|endoftext|>` 或生成到上限，就停止
+7. 解码成字符串输出
+
+它实现了 GPT 类模型常见的 **温度采样 + nucleus sampling** 的文本生成。
+
+---
+
  
  
