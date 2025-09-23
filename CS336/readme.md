@@ -632,6 +632,7 @@ def decode_utf8_bytes_to_str_wrong(bytestring: bytes):
 
 ---
 
+
 ## 6.4 多头注意力 (Multi-Head Attention)
 
 1. **动机**
@@ -668,6 +669,607 @@ def decode_utf8_bytes_to_str_wrong(bytestring: bytes):
   * 注意保存中间结果，减少重复计算。
 
 ---
+
+# 第7章 实验 
+
+**来源：** *cs336\_spring2025\_assignment1\_basics.pdf*。下文翻译严格基于该文档第 7 部分内容（见引用）。&#x20;
+
+> 说明：我把第 7 章（`7 Experiments`）的全部小节按原文逻辑与顺序逐条、逐句翻译为中文并以 Markdown 排版。为便于核对与后续查阅，每个小节后面我都放了对应的文档引用标记（来自上传的 PDF）。如需我把翻译与原文并排呈现或输出为单独的 `.md` 文件，可告诉我我会直接生成下载链接。
+
+---
+
+## 目录
+
+1. [总述 / 引言](#总述--引言)
+2. [7.1 如何运行实验与提交项（How to Run Experiments and Deliverables）](#71-如何运行实验与提交项how-to-run-experiments-and-deliverables)
+3. [7.2 TinyStories（小数据集实验）](#72-tinystories小数据集实验)
+
+   * 超参数建议与调优
+   * 示例文本
+   * 可交付成果（Deliverables）
+4. [7.3 消融（Ablations）与架构改动（Architecture modifications）](#73-消融ablations与架构改动architecture-modifications)
+
+   * 消融 1：Layer Normalization（RMSNorm）
+   * 消融：Pre-norm vs Post-norm
+   * 消融 2：位置编码（RoPE vs NoPE）
+   * 消融 3：SwiGLU vs SiLU
+   * 提交要求
+5. [7.4 在 OpenWebText 上运行（Running on OpenWebText）](#74-在-openwebtext-上运行running-on-openwebtext)
+
+   * 示例与注意事项
+   * 主实验说明与可交付成果
+6. [7.5 自定义改进与排行榜（Your own modification + leaderboard）](#75-自定义改进与排行榜your-own-modification--leaderboard)
+
+   * 排行榜规则
+   * 参考资源与提示
+   * 可交付成果
+7. [实用小贴士与低资源选项（摘录）](#实用小贴士与低资源选项摘录)
+
+---
+
+## 总述 / 引言
+
+现在是把前面各个模块整合起来、训练（小型）语言模型并运行一系列实验的时候了。实验的目标是以动手修改和运行为主，通过在可控的小规模设置上反复试验，来理解 Transformer 各组成部分对训练稳定性与最终效果的影响。为此课程建议先在小模型（约 17M 参数）与简单数据集（TinyStories）上快速实验，再迁移到更大、噪声更多的 OpenWebText 数据集上做对比与扩展。&#x20;
+
+---
+
+## 7.1 如何运行实验与提交项（How to Run Experiments and Deliverables）&#x20;
+
+**要点（翻译并归纳）：**
+
+* 最好的学习方式是“改动并亲自运行”——通过亲自修改 Transformer 并训练来理解各个组件的作用。
+* 实验应做到：快速可复现（快速在小规模上跑实验）、系统化（按计划做消融与超参扫描）、并记录详细日志（实验尝试、学习曲线等）。
+* 为便于提交损失曲线，务必周期性地计算并记录**验证损失（validation loss）**，同时记录梯度步数和实时时钟（wallclock time）。推荐使用像 Weights & Biases 这样的实验追踪工具以便记录。
+
+**任务（Problem (experiment\_log)，3 分）：**
+
+* 为训练与评估代码构建实验追踪基础设施（能够按梯度步数和真实时间记录学习曲线）。
+* **可交付物（Deliverable）**：把用于实验的日志基础设施代码提交，并提交一份“实验日志”（记录你尝试过的所有设置与结果）。&#x20;
+
+---
+
+## 7.2 TinyStories（小型数据集实验）
+
+### 说明
+
+* 本节先使用 TinyStories（Eldan & Li, 2023）这个非常小且易训练的数据集，让模型能很快收敛并可以看到一些有趣行为。数据集获取方式见文档第 1 节。下面给出一个 TinyStories 的样例，以便对数据有直观感受（文档中给了示例段落）。&#x20;
+
+**示例（文档原示例已在源文件）：**
+
+> （示例文本略长——文档中给出了一段完整的 TinyStories 样本，供生成质量对比使用。）&#x20;
+
+### 超参数建议（起始值）
+
+文档给出了一组用来启动训练的基本超参（**你应当以此为起点并做搜索**）：
+
+* `vocab_size`: **10000**。通常词表会从几万到几十万，建议试验不同词表尺寸观察压缩率与模型行为变化。
+* `context_length`（上下文长度 / sequence length）: **256**。TinyStories 不需要太长的上下文，但后续 OpenWebText 可能要更长。
+* `d_model`: **512**（隐层维度）。比常见的 768 略小，以便训练更快。
+* `d_ff`: **1344**（Feed-Forward 隐层维度；约等于 $\tfrac{8}{3} d\_model$ ，同时取能被 64 整除以更好利用 GPU tensor core）。
+* RoPE（旋转位置编码）参数 `Θ`: **10000**。
+* 层数 / heads: **4 层, 16 heads**（对应约 17M 非嵌入参数，是一个较小的 Transformer 配置）。
+* **总处理 token 数（total tokens processed）**：**327,680,000**（你的 batch\_size × total step count × context\_length 应大致等于这个值）。
+
+**需你调优的超参（建议做搜索）：** 学习率（learning rate）、warmup 步数、AdamW 的 β1/β2/ϵ、weight decay 等。文中建议参考 Kingma & Ba（Adam 原文）来选择典型值。
+
+### 运行时间提示
+
+* 如果实现正确且高效，上述超参在单块 H100 GPU 上大约需要 **30–40 分钟**。如果你的 runtime 大幅超过该范围，请检查数据加载、checkpoint 或验证逻辑是否成为瓶颈，并确保实现正确地使用批处理。&#x20;
+
+### 可交付成果（涉及 TinyStories 的任务）
+
+* **训练脚本与模型**：按要求训练 BPE tokenizer、对数据分词、运行训练循环并周期性保存验证损失。
+* **生成文本（Problem: generate）**：用训练好的模型生成文本，要求至少输出 256 个 token（或直到 `<|endoftext|>`），并对生成流畅性给出简短评述与至少两个影响质量的因素。&#x20;
+
+---
+
+## 7.3 消融（Ablations）与架构改动（Architecture modification）
+
+> 本小节目的：通过有针对性的“消融实验（ablation）”来理解 Transformer 各部分对训练稳定性与性能的影响。每个消融是一个独立的小实验，要求你做对照（baseline vs 修改后的模型）并上交学习曲线与结论。
+
+### 消融 1：Layer Normalization（移除 RMSNorm）
+
+**背景：** Layer normalization（此处使用 RMSNorm 的变体）常被认为对于 Transformer 的训练稳定性至关重要。
+**任务（layer\_norm\_ablation）**：移除 Transformer block 中所有的 RMSNorm 并用之前的最优学习率训练。
+**要回答的问题：** 在之前的最优学习率下训练会发生什么？是否需要把学习率降低以恢复稳定性？
+**可交付成果：**
+
+* 移除 RMSNorm 后的学习曲线；
+* 在调整后最佳学习率下的学习曲线；
+* 简短讨论 RMSNorm 对训练的影响。&#x20;
+
+### 消融：Pre-norm vs Post-norm（层归一化位置）
+
+**背景：** Pre-norm（课程默认）定义为：
+
+```
+z = x + MultiHeadedSelfAttention(RMSNorm(x))
+y = z + FFN(RMSNorm(z))
+```
+
+原始 Transformer 使用的是 post-norm：
+
+```
+z = RMSNorm(x + MultiHeadedSelfAttention(x))
+y = RMSNorm(z + FFN(z))
+```
+
+**任务（pre\_norm\_ablation）**：把实现从 pre-norm 改为 post-norm，训练并比较两种设计的差异。
+**可交付成果：** post-norm 与 pre-norm 的学习曲线对比与简短分析。&#x20;
+
+### 消融 2：位置编码（RoPE vs NoPE）
+
+**背景：** 探究位置编码对模型性能的影响：把带 RoPE（旋转位置编码）的基线模型与\*\*没有任何位置编码（NoPE）\*\*的模型做对比。文献表明在 decoder-only（因果掩码）设置下，模型理论上可从纯数据中推断相对/绝对位置信息，但实证表现值得检验。
+**任务（no\_pos\_emb）**：移除位置信息（NoPE）并训练对比。
+**可交付成果：** RoPE vs NoPE 的学习曲线对比与讨论。&#x20;
+
+### 消融 3：SwiGLU vs SiLU（FFN 中 Gating 重要性）
+
+**背景：** 根据 Shazeer（2020）关于门控机制的讨论，测试带有门控的 SwiGLU 与普通的 SiLU 激活的 FFN 的差异。文档给出参数匹配的建议：
+
+* SwiGLU 的内层宽度采用 $d\_{ff} \approx \frac{8}{3} d\_{model}$（并保证 `d_ff % 64 == 0`）；
+* 为了给 SiLU 网络匹配参数量，建议把 SiLU FFN 设为 `d_ff = 4 * d_model`（因为 SiLU FFN 只有两个权重矩阵而 SwiGLU 有三个）。
+  **任务（swiglu\_ablation）**：实现并比较 SwiGLU 和 SiLU 的表现（参数量近似匹配）。
+  **可交付成果：** 两者的学习曲线，及简短结论。&#x20;
+
+### 其它消融或改动建议
+
+* 还有建议的改动包括：权重初始化、embedding / LM head 权重绑定（weight tying）、不同归一化方式等（这些可以作为你自己的实验项在排行榜/自定义改动中提交）。文中也建议先在 TinyStories 上测试改动再转到 OpenWebText。&#x20;
+
+---
+
+## 7.4 在 OpenWebText 上运行（Running on OpenWebText）&#x20;
+
+### 说明
+
+* OpenWebText（OWT）是一个更接近真实 web 文本的预训练语料（由 Web 抓取构成），文档提供了一个小型样例供查看（片段更复杂、现实）。在转到 OWT 做实验时，**可能需要重新调节学习率 / batch size 等超参**。示例片段用于观察训练数据的复杂性与风格。&#x20;
+
+**任务（main\_experiment）：在 OWT 上做实验（2 分，约 3 H100 小时）**
+
+* 用与 TinyStories 相同的模型架构与训练迭代次数在 OpenWebText 上训练模型，观察模型在更真实/复杂语料上的表现。
+
+**可交付成果：**
+
+1. 在 OpenWebText 上的学习曲线（validation loss 相对于训练步数 & 实时时钟）；讨论与 TinyStories 的损失差异以及这些差异如何被解释（比如语料难度、噪声、domain 差异等）。
+2. 用训练好的 OWT 模型生成文本（与 TinyStories 的生成格式一致），输出不少于 256 token 的文本样本，并评价生成的流畅度及为什么即使与 TinyStories 使用同样模型和计算预算，生成质量可能更差。&#x20;
+
+---
+
+## 7.5 自定义改进与排行榜（Your own modification + leaderboard）
+
+### 目标
+
+* 在此阶段，你尝试对 Transformer 架构做改进（或改变超参 / 训练技巧），在课程排行榜上与其他同学比较结果。该部分鼓励创造性尝试（但有几条必要规则）。
+
+### 排行榜规则（关键限制）
+
+* **运行时间限制（Runtime）**：你的提交最多只能在 **H100 上运行 1.5 小时**。提交脚本可通过 `--time=01:30:00` 在 slurm 中强制限制。
+* **数据限制（Data）**：你只能使用我们提供的 **OpenWebText** 训练数据集。
+* 其它方面自由发挥（可尝试模型改进、预处理、优化器变体等）。&#x20;
+
+### 参考资源（给想法的方向）
+
+* 参考开源的 SOTA LLM（如 Llama 3、Qwen 2.5）的设计与技巧；
+* NanoGPT 的 speedrun / modded 分支（社区在小规模训练上已实现很多“快跑”改动），例如权重绑定（weight tying），但如果使用 weight tying 可能要调整 embedding/LM head 初始化标准差等。建议在小数据集或小子集上先测试再跑完整提交。&#x20;
+
+### 提交要求（Problem: leaderboard）
+
+* 在 1.5 小时 H100 预算内训练你的模型以最小化验证 loss（目标是优于基线）。
+* **可交付成果**：记录的最终验证 loss、学习曲线（x 轴为实时时钟并且小于 1.5 小时）、以及简要描述你所做的改动与实验设置。教师期望排行榜提交能跑出低于默认朴素基线（例如 loss 5.0）的成绩。提交到课程排行榜仓库（文档给出了 GitHub 链接）。&#x20;
+
+---
+
+## 实用小贴士与低资源选项（摘录）
+
+* **低资源/缩放建议（Low-Resource/Downscaling Tips）**：如果 GPU 资源有限，可在 CPU 或 Apple Silicon（M 系列）上做较短的训练（例如把 total tokens 降到 40M），并把目标验证 loss 放宽（例如从 1.45 放宽到 1.80 或 2.0），这个配置能在 CPU/MPS 上得到合理的训练时间与结果对比。文中给出了在 M3 Max 的实验数据作为参考（例如某配置在 CPU 上耗时 \~1 小时 22 分）。
+
+* **调试建议**：
+
+  * 先尝试在单个 minibatch 上过拟合（overfit）以检查模型实现是否正确；
+  * 在模型各组件处设置断点查看 tensor 形状；
+  * 监控激活、参数与梯度范数以避免爆炸或消失。&#x20;
+
+* **学习率、batch size 实验**：课程鼓励做学习率的 sweep（寻找“边界的最佳学习率”），并做不同 batch size 的比较实验（从 1 到 GPU 内存上限），记录学习曲线并讨论发现。
+
+---
+
+## 小结（如何按文档要求开展作业 / 实验流程建议）
+
+1. **先完成 TinyStories 的训练流水线**：实现 tokenizer -> 数据序列化 -> 模型 -> 训练循环 -> checkpoint 与验证评估。用文档给的超参作为起点。&#x20;
+2. **实现实验日志跟踪（experiment\_log）**：周期性上报训练/验证损失与 wallclock，保存学习曲线。&#x20;
+3. **按文档的多个“问题（Problem）”逐一实现并提交可交付物**（例如 decoding、learning rate sweep、batch size 比较、各种消融、TinyStories 与 OpenWebText 的主实验）。
+4. **最终做排行榜提交（选做）**：在 1.5 小时 H100 限制内实现你认为有效的改进并提交学习曲线与最终 loss。&#x20;
+
+---
+
+ 
+---
+
+# 第八部分：训练 Transformer 语言模型
+
+我们已经完成了数据预处理（通过分词器）和模型（Transformer）的实现。接下来需要搭建支持训练的所有代码。这包括以下几个部分：
+
+* **损失函数（Loss）**：我们需要定义损失函数（交叉熵）。
+* **优化器（Optimizer）**：我们需要定义优化器以最小化损失（AdamW）。
+* **训练循环（Training Loop）**：我们需要所有辅助基础设施，用于加载数据、保存检查点以及管理训练。
+
+---
+
+## 8.1 交叉熵损失（Cross-entropy Loss）
+
+回忆一下，Transformer 语言模型为每个长度为 \$m+1\$ 的序列 \$x\$ 定义了一个分布 \$p\_\theta(x\_{i+1} | x\_{1\:i})\$，其中 \$i = 1, \dots, m\$。
+给定一个包含长度为 \$m\$ 序列的数据集 \$D\$，我们定义标准交叉熵（即负对数似然，negative log-likelihood）损失函数：
+
+$$
+\ell(\theta;D) = \frac{1}{|D|m} \sum_{x \in D} \sum_{i=1}^{m} - \log p_\theta(x_{i+1} | x_{1:i}) \tag{16}
+$$
+
+> 注意：一次 Transformer 的前向传播会同时输出所有 \$i = 1, \dots, m\$ 的 \$p\_\theta(x\_{i+1}|x\_{1\:i})\$。
+
+具体来说，Transformer 会在每个位置 \$i\$ 输出一个向量 logits \$o\_i \in \mathbb{R}^{|\text{vocab}|}\$，从而得到概率：
+
+$$
+p(x_{i+1}|x_{1:i}) = \text{softmax}(o_i)[x_{i+1}] = \frac{\exp(o_i[x_{i+1}])}{\sum_{a=1}^{|\text{vocab}|} \exp(o_i[a])} \tag{17}
+$$
+
+交叉熵损失通常是针对 logits 向量 \$o\_i\$ 与目标 token \$x\_{i+1}\$ 定义的。
+
+**实现提示**：实现交叉熵损失时需要注意数值稳定性（和 softmax 一样）。
+
+---
+
+### 问题 (cross\_entropy)
+
+实现交叉熵损失函数。要求：
+
+* 输入预测的 logits \$o\_i\$ 与目标 \$x\_{i+1}\$。
+* 计算交叉熵损失 \$\ell\_i = - \log \text{softmax}(o\_i)\[x\_{i+1}]\$。
+* 要求处理以下细节：
+
+  * 减去最大值以保证数值稳定性。
+  * 尽可能在实现时抵消 `log` 与 `exp`。
+  * 处理 batch 维度，并返回 batch 的平均损失（batch 维度始终在 vocab 维度之前）。
+
+**提交要求**：实现 `[adapters.run_cross_entropy]`，并运行 `uv run pytest -k test_cross_entropy` 测试。
+
+---
+
+### 困惑度（Perplexity）
+
+交叉熵足以用于训练，但在评估模型时，我们通常还需要报告 **困惑度（perplexity）**。
+对于一个长度为 \$m\$ 的序列，假设我们得到了交叉熵损失 \$\ell\_1, \dots, \ell\_m\$，则：
+
+$$
+\text{perplexity} = \exp \Bigg( \frac{1}{m} \sum_{i=1}^m \ell_i \Bigg) \tag{18}
+$$
+
+---
+
+## 8.2 SGD 优化器（The SGD Optimizer）
+
+有了损失函数，我们开始探索优化器。最简单的基于梯度的优化器是 **随机梯度下降（Stochastic Gradient Descent, SGD）**。
+
+从随机初始化参数 \$\theta\_0\$ 开始，对于每一步 \$t = 0, \dots, T-1\$，我们执行以下更新：
+
+$$
+\theta_{t+1} \leftarrow \theta_t - \alpha_t \nabla L(\theta_t; B_t) \tag{19}
+$$
+
+其中 \$B\_t\$ 是从数据集 \$D\$ 中采样的一个 batch，学习率 \$\alpha\_t\$ 和 batch 大小 \$|B\_t|\$ 是超参数。
+
+---
+
+## 8.2.1 在 PyTorch 中实现 SGD
+
+要在 PyTorch 中实现优化器，我们需要继承 `torch.optim.Optimizer` 类。子类必须实现两个方法：
+
+* `__init__(self, params, ...)`
+
+  * 初始化优化器，`params` 是需要优化的参数集合。
+  * 确保将 `params` 传递给基类构造函数，以便其存储这些参数供 `step` 使用。
+  * 可以接收额外参数（如学习率）。
+
+* `step(self)`
+
+  * 执行一次参数更新。
+  * 在训练循环中，会在反向传播（backward）后调用。
+  * 遍历每个参数 `p`，利用 `p.grad` 更新 `p.data`。
+
+接下来我们实现一个带 **学习率衰减** 的 SGD：
+
+$$
+\theta_{t+1} = \theta_t - \frac{\alpha}{\sqrt{t+1}} \nabla L(\theta_t; B_t) \tag{20}
+$$
+---
+
+ 
+---
+
+## 8.3 AdamW
+
+虽然 SGD 是最简单的优化器，但在现代深度学习中，我们通常使用 **Adam** 或其变体。
+
+Adam 优化器结合了两个思想：
+
+1. **动量（Momentum）**
+
+   * 梯度 \$\nabla\_t\$ 不仅依赖于当前 batch 的梯度，还结合了过去梯度的指数加权平均。
+   * 公式如下：
+
+   $$
+   m_t = \beta_1 m_{t-1} + (1 - \beta_1)\nabla_t
+   $$
+
+2. **自适应学习率（Adaptive learning rate）**
+
+   * 对梯度的平方求指数加权平均：
+
+   $$
+   v_t = \beta_2 v_{t-1} + (1 - \beta_2) \nabla_t^2
+   $$
+
+   * 这样每个参数都有独立的学习率。
+
+更新规则：
+
+$$
+\theta_{t+1} = \theta_t - \alpha \frac{m_t}{\sqrt{v_t} + \epsilon} \tag{21}
+$$
+
+其中：
+
+* \$\alpha\$：学习率
+* \$\epsilon\$：数值稳定性项
+* \$\beta\_1, \beta\_2\$：衰减参数（常用 0.9 和 0.999）
+
+此外，**AdamW**（“Adam with Weight Decay”）加入了权重衰减（即 L2 正则化），比原始 Adam 更适合训练 Transformer。
+
+---
+
+## 8.4 学习率调度（Learning Rate Scheduling）
+
+学习率在训练中起着关键作用。
+
+* **预热（Warm-up）**：训练初期学习率逐渐增加，避免梯度爆炸。
+* **衰减（Decay）**：训练后期逐渐降低学习率，使模型收敛到更优点。
+
+一种常见调度策略（Transformer 论文中提出）：
+
+$$
+\alpha_t = d_{\text{model}}^{-0.5} \cdot \min(t^{-0.5}, t \cdot w^{-1.5}) \tag{22}
+$$
+
+其中：
+
+* \$d\_{\text{model}}\$：隐藏层维度
+* \$w\$：预热步数（例如 4000）
+* \$t\$：训练步数
+
+这种策略在训练大模型时非常有效。
+
+---
+
+## 8.5 梯度裁剪（Gradient Clipping）
+
+训练深度模型时，有时梯度可能会变得非常大，导致参数更新过于激烈甚至发散。
+
+**梯度裁剪**通过限制梯度范数来避免这种情况：
+
+$$
+\nabla_t \leftarrow \frac{\tau}{\max(\tau, \|\nabla_t\|)} \nabla_t \tag{23}
+$$
+
+其中 \$\tau\$ 是阈值（例如 1.0）。
+
+* 如果梯度过大（\$|\nabla\_t| > \tau\$），就按比例缩小。
+* 如果梯度在范围内，则保持不变。
+
+PyTorch 提供了 `torch.nn.utils.clip_grad_norm_` 来实现这一功能。
+
+---
+
+## 8.6 训练循环（Training Loop）
+
+结合前面所有组件，我们可以搭建完整的训练循环：
+
+1. **数据加载**
+
+   * 使用 `torch.utils.data.DataLoader` 批量加载数据。
+   * 将数据分为训练集和验证集。
+
+2. **前向传播**
+
+   * 输入 token IDs，Transformer 输出 logits。
+
+3. **计算损失**
+
+   * 使用交叉熵函数。
+
+4. **反向传播**
+
+   * `loss.backward()` 计算梯度。
+
+5. **梯度裁剪**
+
+   * 限制梯度范数。
+
+6. **优化器更新**
+
+   * 调用 `optimizer.step()`。
+
+7. **学习率调度**
+
+   * 更新学习率。
+
+8. **清理梯度**
+
+   * `optimizer.zero_grad()`。
+
+---
+
+### 检查点保存（Checkpointing）
+
+在长时间训练中，我们需要定期保存模型和优化器的状态，以便：
+
+* 恢复训练（避免中断）。
+* 保存最优模型（基于验证集性能）。
+
+PyTorch 提供了 `torch.save` 和 `torch.load`：
+
+```python
+torch.save({
+    'model_state_dict': model.state_dict(),
+    'optimizer_state_dict': optimizer.state_dict(),
+    'epoch': epoch,
+}, "checkpoint.pt")
+
+# 加载
+checkpoint = torch.load("checkpoint.pt")
+model.load_state_dict(checkpoint["model_state_dict"])
+optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+```
+
+---
+ 
+ 
+
+---
+
+## 8.7 数据加载器（Data Loader）
+
+为了高效地训练，我们需要把原始文本数据组织成小批量（mini-batch），并将其输入模型。
+
+在 PyTorch 中，可以使用 `torch.utils.data.Dataset` 和 `torch.utils.data.DataLoader`：
+
+1. **Dataset**：定义如何从磁盘读取数据。
+
+   * 例如，每次返回一个文本序列（输入 IDs + 标签）。
+   * 你可以编写一个自定义类继承 `Dataset`。
+
+2. **DataLoader**：将 `Dataset` 包装成批量数据，并支持 **打乱（shuffle）** 和 **多线程加载**。
+
+一个简化示例：
+
+```python
+from torch.utils.data import Dataset, DataLoader
+
+class TextDataset(Dataset):
+    def __init__(self, data, block_size):
+        self.data = data
+        self.block_size = block_size
+
+    def __len__(self):
+        return len(self.data) - self.block_size
+
+    def __getitem__(self, idx):
+        x = self.data[idx:idx+self.block_size]
+        y = self.data[idx+1:idx+self.block_size+1]
+        return torch.tensor(x), torch.tensor(y)
+
+# 构造 DataLoader
+train_loader = DataLoader(TextDataset(train_ids, block_size=128), batch_size=64, shuffle=True)
+```
+
+这样，训练时每个 batch 会提供 `(x, y)` 对，供 Transformer 预测下一个 token。
+
+---
+
+## 8.8 检查点保存（Checkpointing）
+
+训练语言模型可能需要数小时甚至数天，因此必须保存中间状态。
+
+### 为什么要保存检查点？
+
+* **防止意外中断**：如果训练被打断，可以从保存点恢复。
+* **记录最优模型**：在验证集上表现最佳的模型需要保存下来。
+
+### PyTorch 实现方式
+
+```python
+# 保存
+torch.save({
+    "model_state_dict": model.state_dict(),
+    "optimizer_state_dict": optimizer.state_dict(),
+    "scheduler_state_dict": scheduler.state_dict(),
+    "epoch": epoch,
+    "loss": loss,
+}, "checkpoint.pt")
+
+# 加载
+checkpoint = torch.load("checkpoint.pt")
+model.load_state_dict(checkpoint["model_state_dict"])
+optimizer.load_state_dict(checkpoint["optimizer_state_dict"])
+scheduler.load_state_dict(checkpoint["scheduler_state_dict"])
+```
+
+注意：恢复训练时需要确保模型和优化器初始化一致。
+
+---
+
+## 8.9 完整训练循环（Full Training Loop）
+
+综合 **前向传播 → 计算损失 → 反向传播 → 更新参数 → 学习率调度 → 保存检查点**，得到完整流程：
+
+```python
+for epoch in range(num_epochs):
+    model.train()
+    for x, y in train_loader:
+        # 前向传播
+        logits = model(x)
+        loss = criterion(logits.view(-1, vocab_size), y.view(-1))
+
+        # 反向传播
+        optimizer.zero_grad()
+        loss.backward()
+
+        # 梯度裁剪
+        torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm=1.0)
+
+        # 更新参数
+        optimizer.step()
+
+        # 学习率调度
+        scheduler.step()
+
+    # 验证
+    model.eval()
+    val_loss = evaluate(model, val_loader)
+
+    # 保存检查点
+    torch.save({
+        "model_state_dict": model.state_dict(),
+        "optimizer_state_dict": optimizer.state_dict(),
+        "scheduler_state_dict": scheduler.state_dict(),
+        "epoch": epoch,
+        "val_loss": val_loss,
+    }, f"checkpoint_{epoch}.pt")
+```
+
+训练过程中通常会记录 **loss 曲线** 以监控收敛情况。
+
+---
+
+## 8.10 小结
+
+在本节中，我们完成了 **Transformer 语言模型的训练框架**：
+
+* 使用 **交叉熵损失** 作为目标函数。
+* 使用 **AdamW 优化器**，并结合 **学习率调度** 和 **梯度裁剪**。
+* 通过 **DataLoader** 提供批量数据。
+* 利用 **检查点保存**，保证训练过程稳定和可恢复。
+* 设计了一个 **完整的训练循环**，支持大规模训练。
+
+至此，我们已经具备了一个完整的 Transformer LM 训练系统，可以在合适的数据集上开始实验。
+
+---
+
+ 
+
+ 
+
+---
+ 
+ 
 
 ## 9.文本生成
 
