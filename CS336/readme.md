@@ -1,6 +1,18 @@
  
 ---
-#  CS336课程文件翻译
+#  CS336课程导引
+
+## 建议学习路径
+本目录主要实现了BPE Tokenizer，transformer，以及lamma和gpt架构大模型generate的代码。
+
+建议学习顺序，跟着文档走
+
+* [1.基础知识 ](./Tokenization/main.py)
+* [2.BPE Tokenizer模型及其训练](./Tokenization/Tokenizer.md)
+* [3.Transformer ](./Transformer/Transformer.md)
+* [4.generate](./Tokenization/generate.md)
+
+代码并没有实现课程文档内的所有内容，因为其中部分比较基础，所以省去，有兴趣的同学可以进行补充。
 
 ## 📖 目录（翻译）
 
