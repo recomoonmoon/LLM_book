@@ -64,16 +64,17 @@
 * **学习目标：**
   * [实现医药问答agent](https://github.com/recomoonmoon/LLM_learning_book/blob/master/LangChain/medical_qa_agent)
 ---
-### 4. 大模型之基础
+### 4. 大模型之基础 (CS336)
 * 参考: [斯坦福CS336](https://online.stanford.edu/courses/cs336-language-modeling-scratch)
 * 重点理解：
-  * Transformer(前面有手撕，略)
+  * [Transformer](./CS336/Transformer/Transformer.md)
   * [BPE Tokenization](https://github.com/recomoonmoon/LLM_learning_book/blob/master/CS336/Tokenization)  
-  * Experiments
+  * [Generate](./CS336/Tokenization/generate.md)
   * 工作流程
 ---
 
-### 5. 大模型之微调
+### 5. 大模型之训练与微调
+大模型的预训练组相关HC门槛极高而且学习很需要资源，作者只是一个database组小硕，所以我们主要进行微调学习。
 
 * 学习几种常见的微调方法：
 

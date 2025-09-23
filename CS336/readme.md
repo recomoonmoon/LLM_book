@@ -14,6 +14,7 @@
 
 代码并没有实现课程文档内的所有内容，因为其中部分比较基础，所以省去，有兴趣的同学可以进行补充。
 
+PS:部分markdown插件不能正确显示数学公式，建议复制对应章节内容让gpt教，gpt可以读懂然后正确显示并进行教学。
 ## 📖 目录（翻译）
 
 1. **作业概览 (Assignment Overview)**
@@ -896,6 +897,8 @@ y = RMSNorm(z + FFN(z))
 
  
 ---
+ 
+---
 
 # 第八部分：训练 Transformer 语言模型
 
@@ -909,22 +912,29 @@ y = RMSNorm(z + FFN(z))
 
 ## 8.1 交叉熵损失（Cross-entropy Loss）
 
-回忆一下，Transformer 语言模型为每个长度为 \$m+1\$ 的序列 \$x\$ 定义了一个分布 \$p\_\theta(x\_{i+1} | x\_{1\:i})\$，其中 \$i = 1, \dots, m\$。
-给定一个包含长度为 \$m\$ 序列的数据集 \$D\$，我们定义标准交叉熵（即负对数似然，negative log-likelihood）损失函数：
+回忆一下，Transformer 语言模型为每个长度为 $m+1$ 的序列 $x$ 定义了一个分布
 
 $$
-\ell(\theta;D) = \frac{1}{|D|m} \sum_{x \in D} \sum_{i=1}^{m} - \log p_\theta(x_{i+1} | x_{1:i}) \tag{16}
+p_\theta(x_{i+1} \mid x_{1:i}), \quad i = 1, \dots, m
 $$
 
-> 注意：一次 Transformer 的前向传播会同时输出所有 \$i = 1, \dots, m\$ 的 \$p\_\theta(x\_{i+1}|x\_{1\:i})\$。
+给定一个包含长度为 $m$ 序列的数据集 $D$，我们定义标准交叉熵（即负对数似然，negative log-likelihood）损失函数：
 
-具体来说，Transformer 会在每个位置 \$i\$ 输出一个向量 logits \$o\_i \in \mathbb{R}^{|\text{vocab}|}\$，从而得到概率：
+![img\_16.png](img_16.png)
+
+> 注意：一次 Transformer 的前向传播会同时输出所有 $i = 1, \dots, m$ 的 $p_\theta(x_{i+1} \mid x_{1:i})$。
+
+具体来说，Transformer 会在每个位置 $i$ 输出一个向量 logits
 
 $$
-p(x_{i+1}|x_{1:i}) = \text{softmax}(o_i)[x_{i+1}] = \frac{\exp(o_i[x_{i+1}])}{\sum_{a=1}^{|\text{vocab}|} \exp(o_i[a])} \tag{17}
+o_i \in \mathbb{R}^{|\text{vocab}|}
 $$
 
-交叉熵损失通常是针对 logits 向量 \$o\_i\$ 与目标 token \$x\_{i+1}\$ 定义的。
+从而得到概率：
+
+![img\_15.png](img_15.png)
+
+交叉熵损失通常是针对 logits 向量 $o_i$ 与目标 token $x_{i+1}$ 定义的。
 
 **实现提示**：实现交叉熵损失时需要注意数值稳定性（和 softmax 一样）。
 
@@ -934,8 +944,12 @@ $$
 
 实现交叉熵损失函数。要求：
 
-* 输入预测的 logits \$o\_i\$ 与目标 \$x\_{i+1}\$。
-* 计算交叉熵损失 \$\ell\_i = - \log \text{softmax}(o\_i)\[x\_{i+1}]\$。
+* 输入预测的 logits $o_i$ 与目标 $x_{i+1}$。
+* 计算交叉熵损失
+
+  $$
+  \ell_i = - \log \text{softmax}(o_i)[x_{i+1}]
+  $$
 * 要求处理以下细节：
 
   * 减去最大值以保证数值稳定性。
@@ -949,11 +963,9 @@ $$
 ### 困惑度（Perplexity）
 
 交叉熵足以用于训练，但在评估模型时，我们通常还需要报告 **困惑度（perplexity）**。
-对于一个长度为 \$m\$ 的序列，假设我们得到了交叉熵损失 \$\ell\_1, \dots, \ell\_m\$，则：
+对于一个长度为 $m$ 的序列，假设我们得到了交叉熵损失 $\ell_1, \dots, \ell_m$，则：
 
-$$
-\text{perplexity} = \exp \Bigg( \frac{1}{m} \sum_{i=1}^m \ell_i \Bigg) \tag{18}
-$$
+![img\_14.png](img_14.png)
 
 ---
 
@@ -961,13 +973,11 @@ $$
 
 有了损失函数，我们开始探索优化器。最简单的基于梯度的优化器是 **随机梯度下降（Stochastic Gradient Descent, SGD）**。
 
-从随机初始化参数 \$\theta\_0\$ 开始，对于每一步 \$t = 0, \dots, T-1\$，我们执行以下更新：
+从随机初始化参数 $\theta_0$ 开始，对于每一步 $t = 0, \dots, T-1$，我们执行以下更新：
 
-$$
-\theta_{t+1} \leftarrow \theta_t - \alpha_t \nabla L(\theta_t; B_t) \tag{19}
-$$
+![img\_13.png](img_13.png)
 
-其中 \$B\_t\$ 是从数据集 \$D\$ 中采样的一个 batch，学习率 \$\alpha\_t\$ 和 batch 大小 \$|B\_t|\$ 是超参数。
+其中 $B_t$ 是从数据集 $D$ 中采样的一个 batch，学习率 $\alpha_t$ 和 batch 大小 $|B_t|$ 是超参数。
 
 ---
 
@@ -975,7 +985,7 @@ $$
 
 要在 PyTorch 中实现优化器，我们需要继承 `torch.optim.Optimizer` 类。子类必须实现两个方法：
 
-* `__init__(self, params, ...)`
+* `__init__(self, params, …)`
 
   * 初始化优化器，`params` 是需要优化的参数集合。
   * 确保将 `params` 传递给基类构造函数，以便其存储这些参数供 `step` 使用。
@@ -989,12 +999,8 @@ $$
 
 接下来我们实现一个带 **学习率衰减** 的 SGD：
 
-$$
-\theta_{t+1} = \theta_t - \frac{\alpha}{\sqrt{t+1}} \nabla L(\theta_t; B_t) \tag{20}
-$$
----
+![img\_12.png](img_12.png)
 
- 
 ---
 
 ## 8.3 AdamW
@@ -1003,36 +1009,13 @@ $$
 
 Adam 优化器结合了两个思想：
 
-1. **动量（Momentum）**
-
-   * 梯度 \$\nabla\_t\$ 不仅依赖于当前 batch 的梯度，还结合了过去梯度的指数加权平均。
-   * 公式如下：
-
-   $$
-   m_t = \beta_1 m_{t-1} + (1 - \beta_1)\nabla_t
-   $$
-
-2. **自适应学习率（Adaptive learning rate）**
-
-   * 对梯度的平方求指数加权平均：
-
-   $$
-   v_t = \beta_2 v_{t-1} + (1 - \beta_2) \nabla_t^2
-   $$
-
-   * 这样每个参数都有独立的学习率。
-
-更新规则：
-
-$$
-\theta_{t+1} = \theta_t - \alpha \frac{m_t}{\sqrt{v_t} + \epsilon} \tag{21}
-$$
+![img\_11.png](img_11.png)
 
 其中：
 
-* \$\alpha\$：学习率
-* \$\epsilon\$：数值稳定性项
-* \$\beta\_1, \beta\_2\$：衰减参数（常用 0.9 和 0.999）
+* $\alpha$：学习率
+* $\epsilon$：数值稳定性项
+* $\beta_1, \beta_2$：衰减参数（常用 0.9 和 0.999）
 
 此外，**AdamW**（“Adam with Weight Decay”）加入了权重衰减（即 L2 正则化），比原始 Adam 更适合训练 Transformer。
 
@@ -1047,15 +1030,13 @@ $$
 
 一种常见调度策略（Transformer 论文中提出）：
 
-$$
-\alpha_t = d_{\text{model}}^{-0.5} \cdot \min(t^{-0.5}, t \cdot w^{-1.5}) \tag{22}
-$$
+![img\_10.png](img_10.png)
 
 其中：
 
-* \$d\_{\text{model}}\$：隐藏层维度
-* \$w\$：预热步数（例如 4000）
-* \$t\$：训练步数
+* $d_{\text{model}}$：隐藏层维度
+* $w$：预热步数（例如 4000）
+* $t$：训练步数
 
 这种策略在训练大模型时非常有效。
 
@@ -1065,18 +1046,17 @@ $$
 
 训练深度模型时，有时梯度可能会变得非常大，导致参数更新过于激烈甚至发散。
 
-**梯度裁剪**通过限制梯度范数来避免这种情况：
+![img\_9.png](img_9.png)
 
-$$
-\nabla_t \leftarrow \frac{\tau}{\max(\tau, \|\nabla_t\|)} \nabla_t \tag{23}
-$$
+其中 $\tau$ 是阈值（例如 1.0）。
 
-其中 \$\tau\$ 是阈值（例如 1.0）。
-
-* 如果梯度过大（\$|\nabla\_t| > \tau\$），就按比例缩小。
+* 如果梯度过大，就按比例缩小。
 * 如果梯度在范围内，则保持不变。
 
 PyTorch 提供了 `torch.nn.utils.clip_grad_norm_` 来实现这一功能。
+
+---
+ 
 
 ---
 
