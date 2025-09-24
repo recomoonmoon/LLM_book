@@ -2,7 +2,7 @@
 
 学习路线笔记：从 PyTorch 到大语言模型
 
-这是一个有一定 AI 基础的程序员学习 **LLM（Large Language Models）** 的学习记录与路线图。每一个章节内都有对应的篇章的笔记，对从0开始的同学友好，也适合有基础的程序员挑着看。
+这是一个database组程序员学习 **LLM（Large Language Models）** 的学习记录与路线图。每一个章节内都有对应的篇章的笔记，对从0开始的同学友好，也适合有基础的程序员挑着看。
 
 ---
 
@@ -73,11 +73,12 @@
   * 工作流程
 ---
 
-### 5. 大模型之训练与微调
+### 5. [大模型之训练与微调](./TrainAndFinetune/)
 大模型的预训练组相关HC门槛极高而且学习很需要资源，作者只是一个database组小硕，所以我们主要进行微调学习。
 
-* 学习几种常见的微调方法：
-
+* 学习路线：
+  * [开源模型的本地部署](./TrainAndFinetune/download_model.py)
+  * [模型的generate流程](./TrainAndFinetune/generate.py)
   * 全参数微调
   * Adapter/Prefix-Tuning
   * LoRA（Low-Rank Adaptation）
