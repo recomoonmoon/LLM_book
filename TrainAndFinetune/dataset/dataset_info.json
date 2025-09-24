@@ -1,0 +1,10 @@
+{
+  "urban_factory_dataset": {
+    "file_name": "urban_factory_dataset.json",
+    "columns": {
+    "prompt": "instruction",
+    "query": "input",
+    "response": "output"
+    }
+  }
+}
