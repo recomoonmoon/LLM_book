@@ -36,43 +36,43 @@ model.gradient_checkpointing_enable()
 dataset = Dataset.from_json("./dataset/urban_factory_dataset.json")
 
 def process_func(data):
-    MAX_LENGTH = 512
+    MAX_LENGTH = 512  # 你可以按显存情况调节
 
-    # ====== Prompt 模板 ======
+    # ====== prompt 模板 ======
     system_prompt = (
         "<|im_start|>system\n"
         "你是我的都市小说助手。我会给你剧情片段或大纲，"
         "请你根据输入扩写成都市风格的小说片段，"
-        "要求文笔贴近都市网文风格。\n"
+        "要求语言生动、贴近生活。\n"
         "<|im_end|>\n"
     )
+
     user_prompt = (
         f"<|im_start|>user\n"
         f"{data['instruction']}{data['input']}\n"
         f"<|im_end|>\n"
     )
+
     assistant_prompt = "<|im_start|>assistant\n"
 
     # ====== tokenize ======
     instruction = tokenizer(
         system_prompt + user_prompt + assistant_prompt,
-        add_special_tokens=False,
-        truncation=True,
-        max_length=MAX_LENGTH
+        add_special_tokens=False
     )
     response = tokenizer(
-        data["output"] + tokenizer.eos_token,
-        add_special_tokens=False,
-        truncation=True,
-        max_length=MAX_LENGTH
+        data["output"] + tokenizer.eos_token,  # 结束符
+        add_special_tokens=False
     )
 
     # 拼接
     input_ids = instruction["input_ids"] + response["input_ids"]
     attention_mask = instruction["attention_mask"] + response["attention_mask"]
+
+    # 构造 labels：prompt 部分不计算 loss
     labels = [-100] * len(instruction["input_ids"]) + response["input_ids"]
 
-    # 截断到 MAX_LENGTH
+    # 截断
     if len(input_ids) > MAX_LENGTH:
         input_ids = input_ids[:MAX_LENGTH]
         attention_mask = attention_mask[:MAX_LENGTH]
