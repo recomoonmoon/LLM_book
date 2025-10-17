@@ -79,10 +79,10 @@
 
 * 学习路线：
   * [开源模型的本地部署](./TrainAndFinetune/download_model.py)
-  * [模型的generate流程](./TrainAndFinetune/generate.py)
-  * 全参数微调
+  * [模型的generate流程](./TrainAndFinetune/1_download_and_generate.md)
+  * [全参数微调(finetune)](./TrainAndFinetune/3_finetune.md)
   * Adapter/Prefix-Tuning
-  * LoRA（Low-Rank Adaptation）
+  * [LoRA（Low-Rank Adaptation）](./TrainAndFinetune/4_lora.md)
   * PEFT（Parameter-Efficient Fine-Tuning）
 
 * 目标：在已有大模型上，快速适配特定任务。
