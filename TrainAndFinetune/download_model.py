@@ -4,7 +4,7 @@ import shutil
 
 def download_safetensors_model():
     model_path = './models/m3e-small'
-w    # 删除旧目录
+    # 删除旧目录
     if os.path.exists(model_path):
         print(1111)
         shutil.rmtree(model_path)
