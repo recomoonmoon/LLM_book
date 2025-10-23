@@ -47,6 +47,8 @@
 * 不同模型厂商（如 LLaMA、Qwen、Baichuan、GLM）定义略有差异，务必参考官方文档。
 * 在特定下游任务中，可以**自定义特殊 Token**，帮助模型理解任务边界或上下文结构。
 
+PS：具体内容可以看tokenizer_config.json，
+![img.png](img.png)
 ---
 
 ## 3️⃣ Prompt 设置技巧
